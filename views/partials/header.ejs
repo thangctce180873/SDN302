@@ -1,0 +1,56 @@
+<header class="topbar" id="siteHeader">
+  <div class="topbar-inner">
+    <a href="/" class="topbar-logo"><img src="/image/NS.png" alt="NightSweet" class="topbar-logo-img"></a>
+
+    <nav class="topbar-nav" id="mainNav">
+      <a href="/" class="topbar-link">Trang Chủ</a>
+      <a href="/list/phim-bo" class="topbar-link">Phim Bộ</a>
+      <a href="/list/phim-le" class="topbar-link">Phim Lẻ</a>
+      <a href="/list/hoat-hinh" class="topbar-link">Hoạt Hình</a>
+      <a href="/list/tv-shows" class="topbar-link">TV Shows</a>
+      <div class="topbar-drop">
+        <a href="#" class="topbar-link">Thể Loại <i class="fas fa-chevron-down"></i></a>
+        <div class="topbar-drop-panel" id="categoryDropdown">
+          <p class="topbar-drop-loading">Đang tải ...</p>
+        </div>
+      </div>
+      <div class="topbar-drop">
+        <a href="#" class="topbar-link">Quốc Gia <i class="fas fa-chevron-down"></i></a>
+        <div class="topbar-drop-panel" id="countryDropdown">
+          <p class="topbar-drop-loading">Đang tải ...</p>
+        </div>
+      </div>
+    </nav>
+
+    <div class="topbar-actions">
+      <form action="/search" method="GET" class="topbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" name="keyword" placeholder="Tìm phim..." autocomplete="off">
+      </form>
+      <% if (user) { %>
+        <div class="topbar-user">
+          <button class="topbar-user-btn"><i class="fas fa-user-circle"></i> <span><%= user.name %></span></button>
+          <div class="topbar-user-panel">
+            <div class="topbar-user-panel-inner">
+              <a href="/profile"><i class="fas fa-user"></i> Tài khoản</a>
+              <a href="/favorites"><i class="fas fa-heart"></i> Yêu thích</a>
+              <a href="/watchlist"><i class="fas fa-bookmark"></i> Xem sau</a>
+              <a href="/history"><i class="fas fa-history"></i> Lịch sử</a>
+              <a href="/notifications"><i class="fas fa-bell"></i> Thông báo</a>
+              <% if (user.role === 'admin') { %>
+                <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+              <% } %>
+              <a href="#" onclick="logout(); return false;"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+            </div>
+          </div>
+        </div>
+      <% } else { %>
+        <a href="/login" class="topbar-login">Đăng Nhập</a>
+      <% } %>
+    </div>
+
+    <button class="topbar-mobile" onclick="document.getElementById('mainNav').classList.toggle('open')">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+</header>

@@ -1,0 +1,45 @@
+<div class="container page-section">
+  <div class="page-header">
+    <h1><i class="fas fa-user"></i> Tài Khoản</h1>
+  </div>
+
+  <div class="profile-grid">
+    <div class="profile-card">
+      <div class="profile-avatar"><i class="fas fa-user-circle"></i></div>
+      <h2><%= user.name %></h2>
+      <p class="profile-email"><%= user.email %></p>
+      <span class="tag blue"><%= user.role === 'admin' ? 'Admin' : 'Member' %></span>
+      <p class="profile-date">Tham gia <%= new Date(user.createdAt).toLocaleDateString('vi-VN') %></p>
+    </div>
+
+    <div class="profile-forms">
+      <div class="card">
+        <h3><i class="fas fa-edit" style="color:var(--accent);margin-right:8px;"></i>Cập Nhật Thông Tin</h3>
+        <div id="profileMsg" class="alert" style="display:none;"></div>
+        <form onsubmit="updateProfile(event)">
+          <div class="form-group">
+            <label for="profileName">Họ tên</label>
+            <input type="text" id="profileName" value="<%= user.name %>" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3><i class="fas fa-key" style="color:var(--gold);margin-right:8px;"></i>Đổi Mật Khẩu</h3>
+        <div id="passwordMsg" class="alert" style="display:none;"></div>
+        <form onsubmit="changePassword(event)">
+          <div class="form-group">
+            <label for="currentPassword">Mật khẩu hiện tại</label>
+            <input type="password" id="currentPassword" required>
+          </div>
+          <div class="form-group">
+            <label for="newPassword">Mật khẩu mới</label>
+            <input type="password" id="newPassword" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Đổi Mật Khẩu</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

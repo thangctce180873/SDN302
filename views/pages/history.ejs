@@ -1,0 +1,35 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<div class="container page-section">
+  <div class="adm-page-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 class="adm-page-title">Lịch Sử Xem</h1>
+      <p class="adm-page-desc"><%= history.length %> phim đã xem</p>
+    </div>
+    <% if (history.length > 0) { %>
+      <button class="adm-btn" onclick="clearHistory()" style="background:var(--red);">
+        <i class="fas fa-trash"></i> Xóa Lịch Sử
+      </button>
+    <% } %>
+  </div>
+  <% if (history.length > 0) { %>
+    <div class="wp-related-grid" style="grid-template-columns:repeat(6,1fr);">
+      <% history.forEach(h => { %>
+        <a href="/watch/<%= h.movieSlug %>" class="wp-related-card">
+          <div class="wp-related-thumb"><img src="<%= imgUrl(h.movieThumb) %>" alt="<%= h.movieName %>" loading="lazy"></div>
+          <p class="wp-related-name"><%= h.movieName %></p>
+          <span class="wp-related-year"><%= h.episodeName ? h.episodeName : '' %> · <%= new Date(h.watchedAt).toLocaleDateString('vi-VN') %></span>
+        </a>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="adm-empty">Bạn chưa xem phim nào</p>
+  <% } %>
+</div>
+<script>
+async function clearHistory() {
+  if (!confirm('Xóa toàn bộ lịch sử xem?')) return;
+  const response = await fetch('/api/history', { method: 'DELETE' });
+  const data = await response.json();
+  if (data.success) location.reload();
+}
+</script>

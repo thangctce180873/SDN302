@@ -1,0 +1,24 @@
+<div class="container page-section">
+  <div class="adm-page-head">
+    <h1 class="adm-page-title">Thông Báo</h1>
+    <p class="adm-page-desc"><%= notifs.length %> thông báo</p>
+  </div>
+  <% if (notifs.length > 0) { %>
+    <div class="notif-list">
+      <% notifs.forEach(n => { %>
+        <div class="notif-item <%= n.read ? '' : 'unread' %>">
+          <div class="notif-icon">
+            <i class="fas fa-<%= n.type === 'system' ? 'cog' : n.type === 'personal' ? 'user' : 'bullhorn' %>"></i>
+          </div>
+          <div class="notif-body">
+            <strong><%= n.title %></strong>
+            <p><%= n.message %></p>
+            <span class="adm-sub"><%= new Date(n.createdAt).toLocaleDateString('vi-VN') %></span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="adm-empty">Không có thông báo nào</p>
+  <% } %>
+</div>

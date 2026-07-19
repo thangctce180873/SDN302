@@ -1,0 +1,61 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+
+<div class="container page-section">
+  <div class="page-header">
+    <h1><i class="fas fa-search"></i> Tìm Kiếm Phim</h1>
+  </div>
+
+  <form action="/search" method="GET" class="search-page-form">
+    <input type="text" name="keyword" value="<%= keyword %>" placeholder="Nhập tên phim, diễn viên, thể loại..." class="search-page-input" autofocus>
+    <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-search"></i> Tìm</button>
+  </form>
+
+  <% if (keyword) { %>
+    <p class="search-result-text">Kết quả cho "<strong><%= keyword %></strong>" &mdash; <%= movies.length %> phim</p>
+  <% } %>
+
+  <% if (movies.length > 0) { %>
+    <div class="movie-grid">
+      <% movies.forEach(item => { %>
+        <a href="/movie/<%= item.slug %>" class="movie-card">
+          <div class="movie-card-img">
+            <img src="<%= imgUrl(item.poster_url || item.thumb_url) %>" alt="<%= item.name %>" loading="lazy">
+            <% if (item.quality) { %><span class="badge quality"><%= item.quality %></span><% } %>
+            <% if (item.lang) { %><span class="badge lang"><%= item.lang %></span><% } %>
+            <div class="card-overlay"><i class="fas fa-play-circle"></i></div>
+          </div>
+          <div class="movie-card-info">
+            <h3><%= item.name %></h3>
+            <p><%= item.year %></p>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+
+    <% if (pagination.totalPages > 1) { %>
+      <div class="pagination">
+        <% if (currentPage > 1) { %>
+          <a href="/search?keyword=<%= keyword %>&page=<%= currentPage - 1 %>" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+        <% } %>
+        <% const start = Math.max(1, currentPage - 2); const end = Math.min(pagination.totalPages, currentPage + 2); %>
+        <% for (let i = start; i <= end; i++) { %>
+          <a href="/search?keyword=<%= keyword %>&page=<%= i %>"
+             class="page-btn <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+        <% } %>
+        <% if (end < pagination.totalPages) { %>
+          <span class="page-dots">...</span>
+          <a href="/search?keyword=<%= keyword %>&page=<%= pagination.totalPages %>" class="page-btn"><%= pagination.totalPages %></a>
+        <% } %>
+        <% if (currentPage < pagination.totalPages) { %>
+          <a href="/search?keyword=<%= keyword %>&page=<%= currentPage + 1 %>" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+        <% } %>
+      </div>
+    <% } %>
+  <% } else if (keyword) { %>
+    <div class="empty-state">
+      <i class="fas fa-search"></i>
+      <h1>Không tìm thấy</h1>
+      <p>Không có phim nào phù hợp với từ khóa "<%= keyword %>".</p>
+    </div>
+  <% } %>
+</div>

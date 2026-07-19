@@ -1,0 +1,44 @@
+<aside class="adm-sidebar">
+  <div class="adm-sidebar-head">
+    <img src="/image/NS.png" alt="NightSweet" class="adm-sidebar-logo">
+    <span>Admin Panel</span>
+  </div>
+  <nav class="adm-sidebar-nav">
+    <span class="adm-sidebar-section">Tổng Quan</span>
+    <a href="/admin" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'dashboard' ? 'active' : '' %>">
+      <i class="fas fa-chart-pie"></i> Dashboard
+    </a>
+    <span class="adm-sidebar-section">Quản Lý</span>
+    <a href="/admin/movies" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'movies' ? 'active' : '' %>">
+      <i class="fas fa-film"></i> Quản Lý Phim
+    </a>
+    <a href="/admin/users" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'users' ? 'active' : '' %>">
+      <i class="fas fa-users"></i> Người Dùng
+    </a>
+    <a href="/admin/comments" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'comments' ? 'active' : '' %>">
+      <i class="fas fa-comments"></i> Bình Luận
+    </a>
+    <a href="/admin/reviews" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'reviews' ? 'active' : '' %>">
+      <i class="fas fa-star"></i> Reviews
+    </a>
+    <a href="/admin/favorites" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'favorites' ? 'active' : '' %>">
+      <i class="fas fa-heart"></i> Yêu Thích
+    </a>
+    <a href="/admin/reports" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'reports' ? 'active' : '' %>">
+      <i class="fas fa-flag"></i> Báo Cáo
+    </a>
+    <span class="adm-sidebar-section">Hệ Thống</span>
+    <a href="/admin/notifications" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'notifications' ? 'active' : '' %>">
+      <i class="fas fa-bell"></i> Thông Báo
+    </a>
+    <a href="/admin/activity" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'activity' ? 'active' : '' %>">
+      <i class="fas fa-history"></i> Activity Log
+    </a>
+    <a href="/admin/api-config" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'api-config' ? 'active' : '' %>">
+      <i class="fas fa-plug"></i> Cấu Hình API
+    </a>
+  </nav>
+  <div class="adm-sidebar-footer">
+    <a href="/" class="adm-sidebar-link"><i class="fas fa-arrow-left"></i> Về Trang Chủ</a>
+  </div>
+</aside>

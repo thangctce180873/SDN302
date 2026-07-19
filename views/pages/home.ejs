@@ -1,0 +1,203 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const stripHtml = (str) => str ? str.replace(/<[^>]*>/g, '').trim() : ''; %>
+
+<% if (heroMovies && heroMovies.length > 0) { %>
+  <section class="hero" id="heroSection">
+
+    <% heroMovies.forEach((hm, index) => { %>
+      <div class="hero-slide <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>">
+        <div class="hero-bg">
+          <img src="<%= imgUrl(hm.thumb_url || hm.poster_url) %>" alt="<%= hm.name %>">
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="hero-bottom-fade"></div>
+        <div class="hero-grain"></div>
+      </div>
+    <% }) %>
+
+    <div class="hero-layout">
+      <div class="hero-left">
+        <% heroMovies.forEach((hm, index) => { %>
+          <div class="hero-info <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>">
+
+            <p class="hero-sub"><%= hm.origin_name %></p>
+            <h1 class="hero-title"><%= hm.name %></h1>
+
+            <div class="hero-meta-row">
+              <% if (hm.year) { %><span class="hero-meta-item"><i class="fas fa-calendar-alt"></i> <%= hm.year %></span><% } %>
+              <% if (hm.episode_current) { %><span class="hero-meta-item"><i class="fas fa-layer-group"></i> <%= hm.episode_current %></span><% } %>
+              <% if (hm.episode_total) { %><span class="hero-meta-item"><i class="fas fa-list-ol"></i> <%= hm.episode_total %> tập</span><% } %>
+              <% if (hm.time) { %><span class="hero-meta-item"><i class="fas fa-clock"></i> <%= hm.time %></span><% } %>
+            </div>
+            <% if (hm.quality || hm.lang) { %>
+            <div class="hero-tech-row">
+              <% if (hm.quality) { %><span class="hero-tech quality"><%= hm.quality %></span><% } %>
+              <% if (hm.lang) { %><span class="hero-tech lang"><i class="fas fa-closed-captioning"></i> <%= hm.lang %></span><% } %>
+            </div>
+            <% } %>
+
+            <% if (hm.category && hm.category.length > 0) { %>
+              <div class="hero-genres">
+                <% hm.category.forEach(cat => { %>
+                  <a href="/category/<%= cat.slug %>" class="hero-genre-tag"><%= cat.name %></a>
+                <% }) %>
+              </div>
+            <% } %>
+
+            <% if (hm.country && hm.country.length > 0) { %>
+              <p class="hero-country"><i class="fas fa-globe-asia"></i> <%= hm.country.map(c => c.name).join(', ') %></p>
+            <% } %>
+
+            <% if (hm.content) { %>
+              <p class="hero-desc"><%= stripHtml(hm.content) %></p>
+            <% } %>
+
+            <div class="hero-actions">
+              <a href="/watch/<%= hm.slug %>" class="play-btn" title="Xem ngay">
+                <i class="fas fa-play"></i>
+              </a>
+              <a href="/movie/<%= hm.slug %>" class="btn btn-outline btn-sm"><i class="fas fa-info-circle"></i> Chi Tiết</a>
+            </div>
+
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="hero-right">
+        <div class="hero-thumbs">
+          <div class="hero-thumbs-track">
+            <% heroMovies.forEach((hm, index) => { %>
+              <div class="hero-thumb <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>" onclick="switchHero(<%= index %>)">
+                <img src="<%= imgUrl(hm.thumb_url || hm.poster_url) %>" alt="<%= hm.name %>">
+                <div class="hero-thumb-info">
+                  <p class="hero-thumb-title"><%= hm.name %></p>
+                  <span class="hero-thumb-year"><%= hm.year %></span>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+<% } %>
+
+<!-- SECTION 1: Mới Cập Nhật – Landscape Horizontal Scroll -->
+<% if (newMovies.length > 0) { %>
+<section class="sec-new container">
+  <div class="section-header">
+    <h2>Mới Cập Nhật</h2>
+    <span class="section-tag">NEW</span>
+  </div>
+  <div class="landscape-scroll">
+    <% newMovies.slice(0, 10).forEach(item => { %>
+      <a href="/movie/<%= item.slug %>" class="landscape-card">
+        <img src="<%= imgUrl(item.thumb_url || item.poster_url) %>" alt="<%= item.name %>" loading="lazy">
+        <div class="landscape-card-bottom">
+          <% if (item.quality) { %><span class="lc-quality"><%= item.quality %></span><% } %>
+          <h3><%= item.name %></h3>
+          <p><%= item.year %> <% if (item.episode_current) { %>&bull; <%= item.episode_current %><% } %></p>
+        </div>
+        <div class="landscape-card-play"><i class="fas fa-play"></i></div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- SECTION 2: Phim Bộ – Spotlight (1 Lớn + Grid Nhỏ) -->
+<% if (seriesMovies.length > 0) { %>
+<section class="sec-spotlight container">
+  <div class="section-header">
+    <h2>Phim Bộ Đang Hot</h2>
+    <a href="/list/phim-bo" class="see-all">Xem tất cả<i class="fas fa-arrow-right"></i></a>
+  </div>
+  <div class="spotlight-wrap">
+    <a href="/movie/<%= seriesMovies[0].slug %>" class="spotlight-feature">
+      <img src="<%= imgUrl(seriesMovies[0].thumb_url || seriesMovies[0].poster_url) %>" alt="<%= seriesMovies[0].name %>" loading="lazy">
+      <div class="spotlight-feature-info">
+        <% if (seriesMovies[0].quality) { %><span class="lc-quality"><%= seriesMovies[0].quality %></span><% } %>
+        <h3><%= seriesMovies[0].name %></h3>
+        <p><%= seriesMovies[0].year %> <% if (seriesMovies[0].episode_current) { %>&bull; <%= seriesMovies[0].episode_current %><% } %></p>
+      </div>
+    </a>
+    <div class="spotlight-side">
+      <% seriesMovies.slice(1, 5).forEach(item => { %>
+        <a href="/movie/<%= item.slug %>" class="spotlight-item">
+          <img src="<%= imgUrl(item.thumb_url || item.poster_url) %>" alt="<%= item.name %>" loading="lazy">
+          <div class="spotlight-item-info">
+            <h3><%= item.name %></h3>
+            <p><%= item.year %> <% if (item.episode_current) { %>&bull; <%= item.episode_current %><% } %></p>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<!-- SECTION 3: Phim Lẻ – Top 10 Ranking -->
+<% if (singleMovies.length > 0) { %>
+<section class="sec-ranking container">
+  <div class="section-header">
+    <h2>Top 10 Phim Lẻ</h2>
+    <a href="/list/phim-le" class="see-all">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+  </div>
+  <div class="ranking-scroll">
+    <% singleMovies.slice(0, 10).forEach((item, index) => { %>
+      <a href="/movie/<%= item.slug %>" class="ranking-item">
+        <div class="ranking-poster">
+          <span class="ranking-num"><%= index + 1 %></span>
+          <img src="<%= imgUrl(item.poster_url || item.thumb_url) %>" alt="<%= item.name %>" loading="lazy">
+        </div>
+        <h3 class="ranking-title"><%= item.name %></h3>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- SECTION 4: Hoạt Hình – Grid 4 Cột -->
+<% if (cartoonMovies.length > 0) { %>
+<section class="sec-anim container">
+  <div class="section-header">
+    <h2>Hoạt Hình</h2>
+    <a href="/list/hoat-hinh" class="see-all">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+  </div>
+  <div class="anim-grid">
+    <% cartoonMovies.slice(0, 12).forEach(item => { %>
+      <a href="/movie/<%= item.slug %>" class="anim-item">
+        <div class="anim-thumb">
+          <img src="<%= imgUrl(item.thumb_url || item.poster_url) %>" alt="<%= item.name %>" loading="lazy">
+        </div>
+        <h3><%= item.name %></h3>
+        <p><%= item.year %> <% if (item.episode_current) { %>&bull; <%= item.episode_current %><% } %></p>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- SECTION 5: Chiếu Rạp -->
+<% if (typeof theaterMovies !== 'undefined' && theaterMovies.length > 0) { %>
+<section class="sec-cinema container">
+  <div class="section-header">
+    <h2>Đang Chiếu Rạp</h2>
+    <span class="section-tag theater-tag">CINEMA</span>
+  </div>
+  <div class="cinema-scroll">
+    <% theaterMovies.slice(0, 12).forEach(item => { %>
+      <a href="/movie/<%= item.slug %>" class="cinema-item">
+        <div class="cinema-thumb">
+          <img src="<%= imgUrl(item.thumb_url || item.poster_url) %>" alt="<%= item.name %>" loading="lazy">
+        </div>
+        <div class="cinema-info">
+          <h3><%= item.name %></h3>
+          <p><%= item.year %> <% if (item.quality) { %>&bull; <%= item.quality %><% } %></p>
+        </div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>

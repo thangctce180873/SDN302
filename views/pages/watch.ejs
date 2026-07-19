@@ -1,0 +1,160 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const jsStr = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"'); %>
+
+<div class="wp">
+  <div class="container">
+    <div class="wp-frame">
+      <% if (currentEpisode && currentEpisode.link_embed) { %>
+        <iframe
+          src="<%= currentEpisode.link_embed %>"
+          frameborder="0"
+          allowfullscreen
+          allow="autoplay; encrypted-media; picture-in-picture"
+        ></iframe>
+      <% } else { %>
+        <div class="wp-error">
+          <i class="fas fa-film"></i>
+          <p>Không tìm thấy nguồn phát</p>
+          <span>Vui lòng thử tập khác hoặc quay lại sau</span>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="wp-info">
+      <div class="wp-main">
+        <div class="wp-meta">
+          <h1 class="wp-title"><%= movie.name %></h1>
+          <p class="wp-origin"><%= movie.origin_name %></p>
+          <div class="wp-tags">
+            <% if (movie.year) { %><span><i class="fas fa-calendar-alt"></i> <%= movie.year %></span><% } %>
+            <% if (movie.quality) { %><span class="wp-tag-accent"><%= movie.quality %></span><% } %>
+            <% if (movie.lang) { %><span><i class="fas fa-closed-captioning"></i> <%= movie.lang %></span><% } %>
+            <% if (movie.time) { %><span><i class="fas fa-clock"></i> <%= movie.time %></span><% } %>
+            <% if (currentEpisode) { %><span><i class="fas fa-play-circle"></i> <%= currentEpisode.name %></span><% } %>
+          </div>
+          <% if (movie.category && movie.category.length) { %>
+            <div class="wp-genres">
+              <% movie.category.forEach(c => { %>
+                <a href="/category/<%= c.slug %>"><%= c.name %></a>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="/movie/<%= movie.slug %>" class="wp-detail-btn"><i class="fas fa-info-circle"></i> Chi Tiết</a>
+          <% if (typeof user !== 'undefined' && user) { %>
+            <button class="wp-detail-btn" style="background:rgba(239,68,68,.15);color:#ef4444;border:none;cursor:pointer;" onclick="openWatchReport()"><i class="fas fa-flag"></i> Báo Lỗi</button>
+          <% } %>
+        </div>
+      </div>
+
+      <% if (serverData && serverData.length > 1) { %>
+        <div class="wp-episodes">
+          <h3 class="wp-ep-heading">Danh Sách Tập</h3>
+          <div class="wp-ep-grid">
+            <% serverData.forEach((ep, idx) => { %>
+              <a href="/watch/<%= movie.slug %>?ep=<%= idx %>"
+                 class="wp-ep <%= idx === currentEpIndex ? 'active' : '' %>">
+                <%= ep.name %>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (relatedMovies && relatedMovies.length > 0) { %>
+      <div class="wp-related">
+        <h3 class="wp-related-heading">Có Thể Bạn Sẽ Thích</h3>
+        <div class="wp-related-grid">
+          <% relatedMovies.forEach(m => { %>
+            <a href="/movie/<%= m.slug %>" class="wp-related-card">
+              <div class="wp-related-thumb">
+                <img src="<%= imgUrl(m.thumb_url || m.poster_url) %>" alt="<%= m.name %>" loading="lazy">
+              </div>
+              <p class="wp-related-name"><%= m.name %></p>
+              <span class="wp-related-year"><%= m.year %></span>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<% if (typeof user !== 'undefined' && user) { %>
+<div id="watchReportModal" class="report-modal-overlay" style="display:none;">
+  <div class="report-modal">
+    <div class="report-modal-head">
+      <h3><i class="fas fa-flag"></i> Báo Lỗi Phim</h3>
+      <button onclick="document.getElementById('watchReportModal').style.display='none'" class="report-close"><i class="fas fa-times"></i></button>
+    </div>
+    <form onsubmit="submitWatchReport(event)">
+      <p class="report-movie-name"><i class="fas fa-film"></i> <%= movie.name %> <% if (currentEpisode) { %>- <%= currentEpisode.name %><% } %></p>
+      <div class="report-group">
+        <label>Loại lỗi <span style="color:#ef4444">*</span></label>
+        <select id="watchReportReason" required>
+          <option value="">-- Chọn loại lỗi --</option>
+          <option value="broken_link">Link phim bị hỏng / không phát được</option>
+          <option value="video_error">Lỗi video (đen, giật, lag)</option>
+          <option value="audio_error">Lỗi âm thanh (không nghe, lệch tiếng)</option>
+          <option value="wrong_subtitle">Sai phụ đề / không có phụ đề</option>
+          <option value="slow_loading">Tải chậm / buffering liên tục</option>
+          <option value="other">Lỗi khác</option>
+        </select>
+      </div>
+      <div class="report-group">
+        <label>Mô tả chi tiết</label>
+        <textarea id="watchReportDetail" rows="4" maxlength="1000" placeholder="Mô tả cụ thể lỗi bạn gặp phải..."></textarea>
+      </div>
+      <div class="report-actions">
+        <button type="button" onclick="document.getElementById('watchReportModal').style.display='none'" class="btn btn-outline">Hủy</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Gửi Báo Lỗi</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openWatchReport() { document.getElementById('watchReportModal').style.display = 'flex'; }
+async function submitWatchReport(e) {
+  e.preventDefault();
+  var reason = document.getElementById('watchReportReason').value;
+  if (!reason) return alert('Vui lòng chọn loại lỗi');
+  try {
+    var res = await fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        movieSlug: '<%= movie.slug %>',
+        movieName: '<%= jsStr(movie.name) %>',
+        episodeName: '<%= currentEpisode ? jsStr(currentEpisode.name) : '' %>',
+        episodeUrl: '<%= currentEpisode ? jsStr(currentEpisode.link_embed || '') : '' %>',
+        reason: reason,
+        detail: document.getElementById('watchReportDetail').value
+      })
+    });
+    var json = await res.json();
+    if (json.success) {
+      alert('Đã gửi báo lỗi thành công!');
+      document.getElementById('watchReportModal').style.display = 'none';
+    } else { alert(json.message || 'Có lỗi xảy ra'); }
+  } catch (err) { alert('Lỗi: ' + err.message); }
+}
+document.getElementById('watchReportModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+
+(function() {
+  fetch('/api/history', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      movieSlug: '<%= movie.slug %>',
+      movieName: '<%= jsStr(movie.name) %>',
+      movieThumb: '<%= imgUrl(movie.thumb_url || movie.poster_url) %>',
+      episodeName: '<%= currentEpisode ? jsStr(currentEpisode.name) : '' %>',
+      episodeIndex: <%= currentEpIndex || 0 %>,
+      serverIndex: 0
+    })
+  }).catch(function(){});
+})();
+</script>
+<% } %>

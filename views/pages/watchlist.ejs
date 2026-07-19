@@ -1,0 +1,35 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<div class="container page-section">
+  <div class="adm-page-head">
+    <h1 class="adm-page-title">Xem Sau</h1>
+    <p class="adm-page-desc"><%= list.length %> phim trong danh sách</p>
+  </div>
+  <% if (list.length > 0) { %>
+    <div class="wp-related-grid" style="grid-template-columns:repeat(6,1fr);">
+      <% list.forEach(m => { %>
+        <div class="wp-related-card" style="position:relative;" id="wl-<%= m.movieSlug %>">
+          <a href="/movie/<%= m.movieSlug %>">
+            <div class="wp-related-thumb"><img src="<%= imgUrl(m.movieThumb) %>" alt="<%= m.movieName %>" loading="lazy"></div>
+          </a>
+          <p class="wp-related-name"><%= m.movieName %></p>
+          <span class="wp-related-year"><%= m.movieYear || '' %></span>
+          <button class="adm-delete" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;" onclick="removeWatchlist('<%= m.movieSlug %>')" title="Xóa">
+            <i class="fas fa-times" style="font-size:.65rem;"></i>
+          </button>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="adm-empty">Danh sách xem sau trống</p>
+  <% } %>
+</div>
+<script>
+async function removeWatchlist(slug) {
+  const res = await fetch(`/api/watchlist/${slug}`, { method: 'DELETE' });
+  const d = await res.json();
+  if (d.success) {
+    const el = document.getElementById(`wl-${slug}`);
+    if (el) { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); }
+  }
+}
+</script>

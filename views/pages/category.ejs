@@ -1,0 +1,53 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+
+<div class="container page-section">
+  <div class="page-header">
+    <h1><i class="fas fa-tags"></i> <%= sectionTitle %></h1>
+    <a href="/" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Trang chủ</a>
+  </div>
+
+  <% if (movies.length > 0) { %>
+    <div class="movie-grid">
+      <% movies.forEach(item => { %>
+        <a href="/movie/<%= item.slug %>" class="movie-card">
+          <div class="movie-card-img">
+            <img src="<%= imgUrl(item.poster_url || item.thumb_url) %>" alt="<%= item.name %>" loading="lazy">
+            <% if (item.quality) { %><span class="badge quality"><%= item.quality %></span><% } %>
+            <% if (item.lang) { %><span class="badge lang"><%= item.lang %></span><% } %>
+            <div class="card-overlay"><i class="fas fa-play-circle"></i></div>
+          </div>
+          <div class="movie-card-info">
+            <h3><%= item.name %></h3>
+            <p><%= item.year %></p>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+
+    <% if (pagination.totalPages > 1) { %>
+      <div class="pagination">
+        <% if (currentPage > 1) { %>
+          <a href="?page=<%= currentPage - 1 %>" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+        <% } %>
+        <% const start = Math.max(1, currentPage - 2); const end = Math.min(pagination.totalPages, currentPage + 2); %>
+        <% for (let i = start; i <= end; i++) { %>
+          <a href="?page=<%= i %>" class="page-btn <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+        <% } %>
+        <% if (end < pagination.totalPages) { %>
+          <span class="page-dots">...</span>
+          <a href="?page=<%= pagination.totalPages %>" class="page-btn"><%= pagination.totalPages %></a>
+        <% } %>
+        <% if (currentPage < pagination.totalPages) { %>
+          <a href="?page=<%= currentPage + 1 %>" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+        <% } %>
+      </div>
+    <% } %>
+  <% } else { %>
+    <div class="empty-state">
+      <i class="fas fa-film"></i>
+      <h1>Chưa có phim</h1>
+      <p>Danh mục này chưa có phim nào</p>
+      <a href="/" class="btn btn-primary">Về Trang Chủ</a>
+    </div>
+  <% } %>
+</div>

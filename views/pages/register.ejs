@@ -1,0 +1,40 @@
+<div class="auth-split">
+  <div class="auth-visual">
+    <img src="https://image.tmdb.org/t/p/original/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg" alt="Cinema" class="auth-visual-img">
+    <div class="auth-visual-overlay"></div>
+    <div class="auth-visual-content">
+      <img src="/image/NS.png" alt="NightSweet" class="auth-visual-logo">
+      <h2>Tham gia<br>NightSweet</h2>
+      <p>Tạo tài khoản miễn phí để xem phim không giới hạn</p>
+    </div>
+  </div>
+  <div class="auth-form-side">
+    <div class="auth-form-wrap">
+      <h1 class="auth-heading">Đăng Ký</h1>
+      <p class="auth-subtext">Tạo tài khoản mới để bắt đầu.</p>
+      <div id="authError" class="alert alert-error" style="display:none;"></div>
+      <form id="registerForm" onsubmit="handleRegister(event)">
+        <div class="auth-field">
+          <label for="name">Họ tên</label>
+          <input type="text" id="name" name="name" placeholder="Tên hiển thị" required>
+        </div>
+        <div class="auth-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@email.com" required>
+        </div>
+        <div class="auth-field">
+          <label for="password">Mật khẩu</label>
+          <input type="password" id="password" name="password" placeholder="Tối thiểu 6 ký tự" minlength="6" required>
+        </div>
+        <div class="auth-field">
+          <label for="confirmPassword">Xác nhận mật khẩu</label>
+          <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu" required>
+        </div>
+        <button type="submit" class="auth-submit" id="registerBtn">
+          Đăng Ký
+        </button>
+      </form>
+      <p class="auth-alt">Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+    </div>
+  </div>
+</div>

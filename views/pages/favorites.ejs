@@ -1,0 +1,35 @@
+<div class="container page-section">
+  <div class="page-header">
+    <h1><i class="fas fa-heart"></i> Phim Yêu Thích</h1>
+    <a href="/" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Trang chủ</a>
+  </div>
+
+  <% if (favorites.length > 0) { %>
+    <div class="movie-grid">
+      <% favorites.forEach(fav => { %>
+        <div class="movie-card fav-card">
+          <a href="/movie/<%= fav.movieSlug %>">
+            <div class="movie-card-img">
+              <img src="<%= fav.movieThumb && fav.movieThumb.startsWith('http') ? fav.movieThumb : ('https://phimimg.com/' + (fav.movieThumb || '')) %>" alt="<%= fav.movieName %>" loading="lazy">
+              <div class="card-overlay"><i class="fas fa-play-circle"></i></div>
+            </div>
+            <div class="movie-card-info">
+              <h3><%= fav.movieName %></h3>
+              <p><%= fav.movieYear %></p>
+            </div>
+          </a>
+          <button class="fav-remove" onclick="removeFavorite('<%= fav.movieSlug %>', this)" title="Xóa">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="empty-state">
+      <i class="fas fa-heart-broken"></i>
+      <h1>Chưa có phim yêu thích</h1>
+      <p>Hãy thêm phim vào danh sách yêu thích để xem lại sau</p>
+      <a href="/" class="btn btn-primary btn-lg">Khám Phá Phim</a>
+    </div>
+  <% } %>
+</div>

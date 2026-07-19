@@ -1,0 +1,42 @@
+<header class="adm-header">
+  <div class="adm-header-left">
+    <button class="adm-header-toggle" id="admSidebarToggle" onclick="document.body.classList.toggle('adm-sidebar-collapsed')">
+      <i class="fas fa-bars"></i>
+    </button>
+    <a href="/admin" class="adm-header-brand">
+      <img src="/image/NS.png" alt="NightSweet" class="adm-header-logo">
+      <span class="adm-header-brand-text">Admin Panel</span>
+    </a>
+  </div>
+
+  <div class="adm-header-center">
+    <form action="/admin/movies" method="GET" class="adm-header-search">
+      <input type="hidden" name="tab" value="browse">
+      <i class="fas fa-search"></i>
+      <input type="text" name="keyword" placeholder="Tìm phim, user..." autocomplete="off">
+    </form>
+  </div>
+
+  <div class="adm-header-right">
+    <a href="/" class="adm-header-btn" title="Về trang chủ">
+      <i class="fas fa-external-link-alt"></i>
+      <span>Xem Website</span>
+    </a>
+    <div class="adm-header-user">
+      <button class="adm-header-user-btn">
+        <div class="adm-header-avatar"><%= user.name.charAt(0).toUpperCase() %></div>
+        <div class="adm-header-user-info">
+          <span class="adm-header-user-name"><%= user.name %></span>
+          <span class="adm-header-user-role">Admin</span>
+        </div>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="adm-header-dropdown">
+        <a href="/profile"><i class="fas fa-user-cog"></i> Tài Khoản</a>
+        <a href="/admin"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <div class="adm-header-dropdown-sep"></div>
+        <a href="#" onclick="logout(); return false;" class="adm-header-dropdown-danger"><i class="fas fa-sign-out-alt"></i> Đăng Xuất</a>
+      </div>
+    </div>
+  </div>
+</header>

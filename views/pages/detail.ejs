@@ -1,0 +1,175 @@
+<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const jsStr = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); %>
+
+<div class="movie-detail-hero" style="background-image: linear-gradient(90deg, rgba(10,10,15,.97) 0%, rgba(10,10,15,.85) 40%, rgba(10,10,15,.6) 70%, rgba(10,10,15,.4)), linear-gradient(to top, var(--bg) 0%, transparent 40%), url('<%= imgUrl(movie.thumb_url || movie.poster_url) %>');">
+  <div class="container movie-detail-grid">
+    <div class="movie-poster">
+      <img src="<%= imgUrl(movie.poster_url || movie.thumb_url) %>" alt="<%= movie.name %>">
+    </div>
+    <div class="movie-info">
+      <div class="hero-badge-row" style="justify-content:flex-start;">
+        <% if (movie.quality) { %><span class="hero-badge quality"><%= movie.quality %></span><% } %>
+        <% if (movie.lang) { %><span class="hero-badge lang"><i class="fas fa-closed-captioning"></i> <%= movie.lang %></span><% } %>
+        <% if (movie.year) { %><span class="hero-badge year"><i class="fas fa-calendar"></i> <%= movie.year %></span><% } %>
+        <% if (movie.episode_current) { %><span class="hero-badge ep"><i class="fas fa-play"></i> <%= movie.episode_current %></span><% } %>
+      </div>
+      <h1><%= movie.name %></h1>
+      <p class="movie-origin"><%= movie.origin_name %></p>
+      <div class="movie-meta-tags">
+        <% if (movie.time) { %><span class="tag gray"><i class="fas fa-clock"></i> <%= movie.time %></span><% } %>
+      </div>
+      <% if (movie.category && movie.category.length > 0) { %>
+        <div class="movie-genres">
+          <% movie.category.forEach(cat => { %>
+            <a href="/category/<%= cat.slug %>" class="genre-tag"><%= cat.name %></a>
+          <% }) %>
+        </div>
+      <% } %>
+      <% if (movie.country && movie.country.length > 0) { %>
+        <p class="movie-country"><i class="fas fa-globe"></i> <%= movie.country.map(c => c.name).join(', ') %></p>
+      <% } %>
+      <% if (movie.content) { %>
+        <div class="movie-desc"><%= movie.content.replace(/<[^>]*>/g, '') %></div>
+      <% } %>
+      <div class="movie-actions">
+        <a href="/watch/<%= movie.slug %>" class="play-btn" title="Xem phim">
+          <i class="fas fa-play"></i>
+        </a>
+        <% if (user) { %>
+          <button class="btn btn-outline btn-lg" id="favBtn"
+            onclick="toggleFavorite('<%= movie.slug %>', '<%= jsStr(movie.name) %>', '<%= imgUrl(movie.thumb_url) %>', <%= movie.year %>)"
+          >
+            <i class="fas fa-heart" style="color:<%= isFavorite ? '#ef4444' : 'inherit' %>;"></i>
+            <%= isFavorite ? 'Đã Thích' : 'Yêu Thích' %>
+          </button>
+          <button class="btn btn-outline btn-lg" onclick="openReportModal()" title="Báo lỗi phim">
+            <i class="fas fa-flag"></i> Báo Lỗi
+          </button>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (episodes && episodes.length > 0) { %>
+  <div class="container">
+    <section class="episode-section">
+      <h2><i class="fas fa-list"></i> Danh Sách Tập</h2>
+      <% episodes.forEach((server, si) => { %>
+        <% if (server.server_data && server.server_data.length > 0) { %>
+          <p class="server-name"><i class="fas fa-server"></i> <%= server.server_name %></p>
+          <div class="episode-grid">
+            <% server.server_data.forEach((ep, ei) => { %>
+              <a href="/watch/<%= movie.slug %>?server=<%= si %>&ep=<%= ei %>" class="episode-btn"><%= ep.name %></a>
+            <% }) %>
+          </div>
+        <% } %>
+      <% }) %>
+    </section>
+  </div>
+<% } %>
+
+<div class="container">
+  <section class="comment-section">
+    <h2><i class="fas fa-comments"></i> Bình Luận (<%= comments.length %>)</h2>
+    <% if (user) { %>
+      <form class="comment-form" onsubmit="postComment(event, '<%= movie.slug %>')">
+        <textarea id="commentContent" placeholder="Chia sẻ cảm nghĩ của bạn..." maxlength="500" required></textarea>
+        <button type="submit" class="btn btn-primary">Gửi</button>
+      </form>
+    <% } else { %>
+      <p class="login-prompt"><a href="/login">Đăng nhập</a> để bình luận.</p>
+    <% } %>
+    <div id="commentList">
+      <% comments.forEach(c => { %>
+        <div class="comment-item" data-id="<%= c._id %>">
+          <div class="comment-avatar"><i class="fas fa-user-circle"></i></div>
+          <div class="comment-body">
+            <div class="comment-header">
+              <strong><%= c.user?.name || 'Ẩn danh' %></strong>
+              <span class="comment-date"><%= new Date(c.createdAt).toLocaleDateString('vi-VN') %></span>
+            </div>
+            <p class="comment-text"><%= c.content %></p>
+            <% if (user && (user._id.toString() === (c.user?._id || '').toString() || user.role === 'admin')) { %>
+              <div class="comment-actions">
+                <button onclick="deleteComment('<%= c._id %>')"><i class="fas fa-trash"></i> Xóa</button>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+</div>
+
+<% if (user) { %>
+<div id="reportModal" class="report-modal-overlay" style="display:none;">
+  <div class="report-modal">
+    <div class="report-modal-head">
+      <h3><i class="fas fa-flag"></i> Báo Lỗi Phim</h3>
+      <button onclick="document.getElementById('reportModal').style.display='none'" class="report-close"><i class="fas fa-times"></i></button>
+    </div>
+    <form onsubmit="submitReport(event)">
+      <p class="report-movie-name"><i class="fas fa-film"></i> <%= movie.name %></p>
+      <div class="report-group">
+        <label>Loại lỗi <span style="color:#ef4444">*</span></label>
+        <select id="reportReason" required>
+          <option value="">-- Chọn loại lỗi --</option>
+          <option value="broken_link">Link phim bị hỏng / không phát được</option>
+          <option value="video_error">Lỗi video (đen, giật, lag)</option>
+          <option value="audio_error">Lỗi âm thanh (không nghe, lệch tiếng)</option>
+          <option value="wrong_subtitle">Sai phụ đề / không có phụ đề</option>
+          <option value="wrong_info">Thông tin phim sai</option>
+          <option value="slow_loading">Tải chậm / buffering liên tục</option>
+          <option value="copyright">Vi phạm bản quyền</option>
+          <option value="other">Lỗi khác</option>
+        </select>
+      </div>
+      <div class="report-group">
+        <label>Tập phim bị lỗi (nếu có)</label>
+        <input type="text" id="reportEpisode" placeholder="VD: Tập 5, Tập 10...">
+      </div>
+      <div class="report-group">
+        <label>Mô tả chi tiết</label>
+        <textarea id="reportDetail" rows="4" maxlength="1000" placeholder="Mô tả cụ thể lỗi bạn gặp phải..."></textarea>
+      </div>
+      <div class="report-actions">
+        <button type="button" onclick="document.getElementById('reportModal').style.display='none'" class="btn btn-outline">Hủy</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Gửi Báo Lỗi</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openReportModal() { document.getElementById('reportModal').style.display = 'flex'; }
+async function submitReport(event) {
+  event.preventDefault();
+  const reason = document.getElementById('reportReason').value;
+  if (!reason) return alert('Vui lòng chọn loại lỗi');
+  try {
+    const response = await fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        movieSlug: '<%= movie.slug %>',
+        movieName: '<%= jsStr(movie.name) %>',
+        episodeName: document.getElementById('reportEpisode').value,
+        reason,
+        detail: document.getElementById('reportDetail').value,
+      }),
+    });
+    const json = await response.json();
+    if (json.success) {
+      alert('Đã gửi báo lỗi thành công! Cảm ơn bạn.');
+      document.getElementById('reportModal').style.display = 'none';
+      document.getElementById('reportReason').value = '';
+      document.getElementById('reportEpisode').value = '';
+      document.getElementById('reportDetail').value = '';
+    } else {
+      alert(json.message || 'Có lỗi xảy ra');
+    }
+  } catch (error) { alert('Lỗi: ' + error.message); }
+}
+document.getElementById('reportModal').addEventListener('click', function(event) { if (event.target === this) this.style.display = 'none'; });
+</script>
+<% } %>
