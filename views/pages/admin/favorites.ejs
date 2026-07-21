@@ -1,0 +1,48 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Thống Kê Yêu Thích</h1>
+  <p class="adm-page-desc">Top phim được yêu thích · Tổng: <%= totalFavorites || 0 %> lượt</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-card-head">
+    <h3><i class="fas fa-heart"></i> Bảng xếp hạng</h3>
+    <a href="/admin/favorites" class="adm-link"><i class="fas fa-sync-alt"></i> Làm mới</a>
+  </div>
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>#</th><th>Phim</th><th>Số lượt thích</th></tr></thead>
+      <tbody>
+        <% const list = topMovies || []; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="3" class="adm-empty">Chưa có ai yêu thích phim nào</td></tr>
+        <% } %>
+        <% list.forEach((m, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td>
+              <a href="/movie/<%= m._id %>" class="adm-movie-link" target="_blank"><%= m.movieName || m._id %></a>
+            </td>
+            <td><span class="adm-count-badge fav"><i class="fas fa-heart"></i> <%= m.count %></span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<% if ((recentFavorites || []).length) { %>
+<section class="adm-card">
+  <div class="adm-card-head"><h3>Yêu thích gần đây</h3></div>
+  <div class="adm-fav-list">
+    <% recentFavorites.forEach(f => { %>
+      <div class="adm-fav-item">
+        <div class="adm-fav-info">
+          <strong><%= f.movieName %></strong>
+          <span class="adm-sub">bởi <%= f.user?.name || f.user?.email || "Ẩn" %> · <%= new Date(f.createdAt).toLocaleString("vi-VN") %></span>
+        </div>
+        <a href="/movie/<%= f.movieSlug %>" class="btn btn-sm btn-outline" target="_blank"><i class="fas fa-external-link-alt"></i></a>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>

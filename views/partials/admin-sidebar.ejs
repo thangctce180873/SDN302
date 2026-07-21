@@ -1,6 +1,6 @@
 <aside class="adm-sidebar">
   <div class="adm-sidebar-head">
-    <img src="/image/NS.png" alt="NightSweet" class="adm-sidebar-logo">
+    <img src="/image/logo.png" alt="NightSweet" class="adm-sidebar-logo">
     <span>Admin Panel</span>
   </div>
   <nav class="adm-sidebar-nav">
@@ -11,6 +11,9 @@
     <span class="adm-sidebar-section">Quản Lý</span>
     <a href="/admin/movies" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'movies' ? 'active' : '' %>">
       <i class="fas fa-film"></i> Quản Lý Phim
+    </a>
+    <a href="/admin/categories" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'categories' ? 'active' : '' %>">
+      <i class="fas fa-tags"></i> Thể Loại
     </a>
     <a href="/admin/users" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'users' ? 'active' : '' %>">
       <i class="fas fa-users"></i> Người Dùng
@@ -26,6 +29,9 @@
     </a>
     <a href="/admin/reports" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'reports' ? 'active' : '' %>">
       <i class="fas fa-flag"></i> Báo Cáo
+    </a>
+    <a href="/admin/history" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'history' ? 'active' : '' %>">
+      <i class="fas fa-clock"></i> Lịch Sử Xem
     </a>
     <span class="adm-sidebar-section">Hệ Thống</span>
     <a href="/admin/notifications" class="adm-sidebar-link <%= typeof adminPage !== 'undefined' && adminPage === 'notifications' ? 'active' : '' %>">

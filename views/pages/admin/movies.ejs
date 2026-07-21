@@ -1,0 +1,115 @@
+<section class="adm-page-head">
+  <div class="adm-page-actions" style="margin-bottom:0;width:100%">
+    <div>
+      <h1 class="adm-page-title">Quản Lý Phim</h1>
+      <p class="adm-page-desc"><%= (movies || []).length %> phim hiển thị · Nguồn: <%= tab === "browse" ? "API phimapi.com" : "Database local" %></p>
+    </div>
+    <span class="adm-badge"><i class="fas fa-database"></i> Local: <%= localCount || 0 %></span>
+  </div>
+</section>
+
+<section class="adm-card">
+  <form class="adm-filter-bar" method="get">
+    <select name="tab">
+      <option value="browse" <%= tab === "browse" ? "selected" : "" %>>API (phimapi.com)</option>
+      <option value="local" <%= tab === "local" ? "selected" : "" %>>Local DB</option>
+    </select>
+    <% if (typeof categories !== 'undefined' && categories.length) { %>
+      <select name="type">
+        <option value="">Tất cả thể loại</option>
+        <% categories.forEach(c => { %>
+          <option value="<%= c.slug %>" <%= type === c.slug ? "selected" : "" %>><%= c.name %></option>
+        <% }) %>
+      </select>
+    <% } %>
+    <input type="text" name="keyword" placeholder="Tìm phim theo tên..." value="<%= keyword || "" %>">
+    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Lọc</button>
+  </form>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Poster</th>
+          <th>Tiêu đề</th>
+          <th>Slug</th>
+          <th>Năm</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% const list = movies || []; %>
+        <% if (!list.length) { %>
+          <tr>
+            <td colspan="5" class="adm-empty">
+              <% if (tab === "local") { %>
+                Chưa có phim trong database — chuyển sang tab <strong>API</strong> để import phim
+              <% } else { %>
+                Không tìm thấy phim — thử từ khóa khác hoặc kiểm tra MOVIE_API_BASE_URL trong .env
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
+        <% list.forEach((m) => { %>
+          <% const thumb = m.thumb_url || m.poster_url || m.thumb || m.poster || ""; %>
+          <tr>
+            <td>
+              <% if (thumb) { %>
+                <img src="<%= thumb %>" alt="" style="width:40px;height:56px;object-fit:cover;border-radius:4px">
+              <% } else { %>
+                <span class="adm-muted">—</span>
+              <% } %>
+            </td>
+            <td><strong><%= m.name || m.title || "-" %></strong></td>
+            <td><code><%= m.slug || "-" %></code></td>
+            <td><%= m.year || "-" %></td>
+            <td class="adm-nowrap">
+              <% if (m.slug) { %>
+                <a class="btn btn-sm btn-outline" href="/movie/<%= m.slug %>" target="_blank">
+                  <i class="fas fa-external-link-alt"></i> Xem
+                </a>
+                <% if (tab === "browse") { %>
+                  <button type="button" class="btn btn-sm btn-primary btn-import" data-slug="<%= m.slug %>">
+                    <i class="fas fa-download"></i> Import
+                  </button>
+                <% } else { %>
+                  <button type="button" class="btn btn-sm btn-danger btn-delete-movie" data-id="<%= m._id %>">
+                    <i class="fas fa-trash"></i> Xóa
+                  </button>
+                <% } %>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<% if (pagination && pagination.totalPages > 1) { %>
+  <div class="adm-toolbar">
+    <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+      <a href="?tab=<%= tab %>&page=<%= p %>&keyword=<%= encodeURIComponent(keyword || "") %>&type=<%= encodeURIComponent(type || "") %>"
+         class="adm-filter <%= pagination.currentPage === p ? "active" : "" %>"><%= p %></a>
+    <% } %>
+  </div>
+<% } %>
+
+<script>
+document.querySelectorAll('.btn-delete-movie').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const ok = await showConfirm('Xóa phim khỏi database local?', { title: 'Xóa phim', confirmText: 'Xóa' });
+    if (!ok) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/admin/movies/' + btn.dataset.id, { method: 'DELETE' });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.message || 'Lỗi');
+      showSuccess('Đã xóa phim khỏi database');
+      setTimeout(() => location.reload(), 700);
+    } catch (err) { showError(err.message); btn.disabled = false; }
+  });
+});
+</script>

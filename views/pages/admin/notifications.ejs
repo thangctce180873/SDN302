@@ -1,0 +1,41 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Thông Báo</h1>
+  <p class="adm-page-desc"><%= (notifs || []).length %> thông báo</p>
+</section>
+
+<section class="adm-card">
+  <form id="notif-form" class="adm-form">
+    <div class="form-row">
+      <input name="title" placeholder="Tiêu đề" required>
+      <input name="message" placeholder="Nội dung" required>
+      <select name="type">
+        <option value="broadcast">Broadcast</option>
+        <option value="personal">Personal</option>
+      </select>
+      <input name="userId" placeholder="User ID (nếu personal)">
+      <button class="btn btn-primary" type="submit">Gửi</button>
+    </div>
+  </form>
+
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>Tiêu đề</th><th>Nội dung</th><th>Loại</th><th>Ngày</th></tr></thead>
+      <tbody>
+        <% const list = notifs || []; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="4">Không có thông báo</td></tr>
+        <% } %>
+        <% list.forEach(n => { %>
+          <tr>
+            <td><%= n.title %></td>
+            <td><%= n.message %></td>
+            <td><%= n.type %></td>
+            <td><%= new Date(n.createdAt).toLocaleString("vi-VN") %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script src="/js/admin.js"></script>

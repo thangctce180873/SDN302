@@ -1,0 +1,98 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Quản Lý Báo Lỗi Phim</h1>
+  <p class="adm-page-desc"><%= (reports || []).length %> báo cáo từ người dùng</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Người báo</th>
+          <th>Phim</th>
+          <th>Tập</th>
+          <th>Loại lỗi</th>
+          <th>Chi tiết</th>
+          <th>Trạng thái</th>
+          <th>Ngày</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% const list = reports || []; %>
+        <% const reasonLabels = {
+          broken_link: "Link hỏng",
+          video_error: "Lỗi video",
+          audio_error: "Lỗi âm thanh",
+          wrong_subtitle: "Sai phụ đề",
+          wrong_info: "Sai thông tin",
+          slow_loading: "Tải chậm",
+          copyright: "Bản quyền",
+          other: "Khác"
+        }; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="8" class="adm-empty">Chưa có báo lỗi nào</td></tr>
+        <% } %>
+        <% list.forEach(r => { %>
+          <tr>
+            <td><%= r.user?.name || r.user?.email || "Ẩn" %></td>
+            <td>
+              <strong><%= r.movieName || r.movieSlug %></strong>
+              <span class="adm-sub"><%= r.movieSlug %></span>
+            </td>
+            <td><%= r.episodeName || "—" %></td>
+            <td><span class="adm-role user"><%= reasonLabels[r.reason] || r.reason %></span></td>
+            <td class="adm-comment-content"><%= r.detail || "—" %></td>
+            <td>
+              <select class="adm-role-select report-status" data-id="<%= r._id %>">
+                <option value="pending" <%= r.status === "pending" ? "selected" : "" %>>Chờ xử lý</option>
+                <option value="resolved" <%= r.status === "resolved" ? "selected" : "" %>>Đã xử lý</option>
+                <option value="dismissed" <%= r.status === "dismissed" ? "selected" : "" %>>Bỏ qua</option>
+              </select>
+            </td>
+            <td class="adm-nowrap adm-muted"><%= new Date(r.createdAt).toLocaleString("vi-VN") %></td>
+            <td>
+              <button type="button" class="btn btn-sm btn-danger btn-delete-report" data-id="<%= r._id %>">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll('.report-status').forEach(sel => {
+  sel.addEventListener('change', async () => {
+    try {
+      const res = await fetch('/api/admin/reports/' + sel.dataset.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: sel.value })
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.message || j.errors?.join(', ') || 'Lỗi');
+      showSuccess('Đã cập nhật trạng thái báo cáo');
+    } catch (err) {
+      showError(err.message);
+      location.reload();
+    }
+  });
+});
+
+document.querySelectorAll('.btn-delete-report').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const ok = await showConfirm('Xóa báo cáo này?', { title: 'Xóa báo cáo', confirmText: 'Xóa' });
+    if (!ok) return;
+    try {
+      const res = await fetch('/api/admin/reports/' + btn.dataset.id, { method: 'DELETE' });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.message || 'Lỗi');
+      showSuccess('Đã xóa báo cáo');
+      setTimeout(() => location.reload(), 700);
+    } catch (err) { showError(err.message); }
+  });
+});
+</script>

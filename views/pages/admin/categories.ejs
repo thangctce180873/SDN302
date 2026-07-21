@@ -1,0 +1,58 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Quản Lý Thể Loại</h1>
+  <p class="adm-page-desc"><%= (categories || []).length %> thể loại từ API phim</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Tên thể loại</th>
+          <th>Slug</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% const list = categories || []; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="3" class="adm-empty">Không tải được thể loại — kiểm tra MOVIE_API_BASE_URL</td></tr>
+        <% } %>
+        <% list.forEach(c => { %>
+          <tr>
+            <td><strong><%= c.name || c.title %></strong></td>
+            <td><code><%= c.slug %></code></td>
+            <td>
+              <a href="/category/<%= c.slug %>" class="btn btn-sm btn-outline" target="_blank">
+                <i class="fas fa-external-link-alt"></i> Xem phim
+              </a>
+              <a href="/admin/movies?tab=browse&type=<%= c.slug %>" class="btn btn-sm btn-primary">
+                <i class="fas fa-film"></i> Admin phim
+              </a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<% if ((countries || []).length) { %>
+<section class="adm-card">
+  <div class="adm-card-head"><h3><i class="fas fa-globe"></i> Quốc gia (<%= countries.length %>)</h3></div>
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>Tên</th><th>Slug</th><th>Link</th></tr></thead>
+      <tbody>
+        <% countries.forEach(c => { %>
+          <tr>
+            <td><%= c.name %></td>
+            <td><code><%= c.slug %></code></td>
+            <td><a href="/country/<%= c.slug %>" class="adm-link" target="_blank">Xem phim</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+<% } %>

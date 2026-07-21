@@ -1,0 +1,29 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Quản Lý Bình Luận</h1>
+  <p class="adm-page-desc"><%= (comments || []).length %> bình luận</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>Người dùng</th><th>Phim</th><th>Nội dung</th><th>Ngày</th><th>Hành động</th></tr></thead>
+      <tbody>
+        <% const list = comments || []; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="5">Không có bình luận</td></tr>
+        <% } %>
+        <% list.forEach(c => { %>
+          <tr>
+            <td><%= c.user?.name || "Ẩn" %></td>
+            <td><%= c.movieSlug %></td>
+            <td><%= c.content %></td>
+            <td><%= new Date(c.createdAt).toLocaleString("vi-VN") %></td>
+            <td><button class="btn btn-sm btn-danger btn-delete-comment" data-id="<%= c._id %>">Xóa</button></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script src="/js/admin.js"></script>

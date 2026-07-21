@@ -1,0 +1,45 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Lịch Sử Xem Phim</h1>
+  <p class="adm-page-desc"><%= (histories || []).length %> mục — lưu khi user tạm dừng / rời trang xem</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Người dùng</th>
+          <th>Phim</th>
+          <th>Tập</th>
+          <th>Sự kiện</th>
+          <th>Lần xem cuối</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% const list = histories || []; %>
+        <% const eventLabels = { start: "Bắt đầu xem", pause: "Tạm dừng", leave: "Rời trang", interval: "Đang xem", update: "Cập nhật" }; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="6" class="adm-empty">Chưa có lịch sử — user cần đăng nhập và xem phim</td></tr>
+        <% } %>
+        <% list.forEach(h => { %>
+          <tr>
+            <td><%= h.user?.name || h.user?.email || "Ẩn" %></td>
+            <td>
+              <strong><%= h.movieName %></strong>
+              <span class="adm-sub"><%= h.movieSlug %></span>
+            </td>
+            <td><%= h.episodeName || "—" %></td>
+            <td><span class="adm-role user"><%= eventLabels[h.eventType] || h.eventType || "—" %></span></td>
+            <td class="adm-nowrap adm-muted"><%= new Date(h.watchedAt || h.updatedAt).toLocaleString("vi-VN") %></td>
+            <td>
+              <a href="/watch/<%= h.movieSlug %>?ep=<%= h.episodeIndex || 0 %>" class="btn btn-sm btn-outline" target="_blank">
+                <i class="fas fa-play"></i> Xem
+              </a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>

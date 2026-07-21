@@ -1,4 +1,4 @@
-<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const imgUrl = (url) => { if (!url) return '/image/logo.png'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
 <% const jsStr = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); %>
 
 <div class="movie-detail-hero" style="background-image: linear-gradient(90deg, rgba(10,10,15,.97) 0%, rgba(10,10,15,.85) 40%, rgba(10,10,15,.6) 70%, rgba(10,10,15,.4)), linear-gradient(to top, var(--bg) 0%, transparent 40%), url('<%= imgUrl(movie.thumb_url || movie.poster_url) %>');">
@@ -35,9 +35,12 @@
         <a href="/watch/<%= movie.slug %>" class="play-btn" title="Xem phim">
           <i class="fas fa-play"></i>
         </a>
-        <% if (user) { %>
-          <button class="btn btn-outline btn-lg" id="favBtn"
-            onclick="toggleFavorite('<%= movie.slug %>', '<%= jsStr(movie.name) %>', '<%= imgUrl(movie.thumb_url) %>', <%= movie.year %>)"
+        <% if (typeof user !== 'undefined' && user) { %>
+          <button type="button" class="btn btn-outline btn-lg" id="favBtn"
+            data-slug="<%= movie.slug %>"
+            data-name="<%= (movie.name || '').replace(/"/g, '&quot;') %>"
+            data-thumb="<%= imgUrl(movie.thumb_url || movie.poster_url) %>"
+            data-year="<%= movie.year || '' %>"
           >
             <i class="fas fa-heart" style="color:<%= isFavorite ? '#ef4444' : 'inherit' %>;"></i>
             <%= isFavorite ? 'Đã Thích' : 'Yêu Thích' %>
@@ -72,7 +75,7 @@
 <div class="container">
   <section class="comment-section">
     <h2><i class="fas fa-comments"></i> Bình Luận (<%= comments.length %>)</h2>
-    <% if (user) { %>
+    <% if (typeof user !== 'undefined' && user) { %>
       <form class="comment-form" onsubmit="postComment(event, '<%= movie.slug %>')">
         <textarea id="commentContent" placeholder="Chia sẻ cảm nghĩ của bạn..." maxlength="500" required></textarea>
         <button type="submit" class="btn btn-primary">Gửi</button>
@@ -102,7 +105,7 @@
   </section>
 </div>
 
-<% if (user) { %>
+<% if (typeof user !== 'undefined' && user) { %>
 <div id="reportModal" class="report-modal-overlay" style="display:none;">
   <div class="report-modal">
     <div class="report-modal-head">
@@ -145,7 +148,7 @@ function openReportModal() { document.getElementById('reportModal').style.displa
 async function submitReport(event) {
   event.preventDefault();
   const reason = document.getElementById('reportReason').value;
-  if (!reason) return alert('Vui lòng chọn loại lỗi');
+  if (!reason) return showWarning('Vui lòng chọn loại lỗi');
   try {
     const response = await fetch('/api/reports', {
       method: 'POST',
@@ -160,15 +163,15 @@ async function submitReport(event) {
     });
     const json = await response.json();
     if (json.success) {
-      alert('Đã gửi báo lỗi thành công! Cảm ơn bạn.');
+      showSuccess('Đã gửi báo lỗi thành công! Cảm ơn bạn.');
       document.getElementById('reportModal').style.display = 'none';
       document.getElementById('reportReason').value = '';
       document.getElementById('reportEpisode').value = '';
       document.getElementById('reportDetail').value = '';
     } else {
-      alert(json.message || 'Có lỗi xảy ra');
+      showError(json.message || 'Có lỗi xảy ra');
     }
-  } catch (error) { alert('Lỗi: ' + error.message); }
+  } catch (error) { showError(error.message || 'Không thể gửi báo lỗi'); }
 }
 document.getElementById('reportModal').addEventListener('click', function(event) { if (event.target === this) this.style.display = 'none'; });
 </script>

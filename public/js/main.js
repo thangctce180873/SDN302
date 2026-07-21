@@ -89,68 +89,129 @@ function resetHeroTimer() {
 })();
 
 /* AUTH */
-async function handleLogin(event) {
-  event.preventDefault();
-  const btn = document.getElementById("loginButton");
-  const errorElement = document.getElementById("autherroror");
-  const originalHTML = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý ...';
-  errorElement.style.display = "none";
-  try {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: document.getElementById("email").value,
-        password: document.getElementById("password").value,
-      }),
-    });
-    const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
-    window.location.href = "/";
-  } catch (error) {
-    errorElement.textContent = error.message;
-    errorElement.style.display = "block";
-    btn.disabled = false;
-    btn.innerHTML = originalHTML;
-  }
-}
-
 async function handleRegister(event) {
   event.preventDefault();
+  const form = event.target || document.getElementById("registerForm");
+  if (!form) return;
+  if (form.dataset.processing) return; // prevent double submit
+  form.dataset.processing = "1";
+
   const btn = document.getElementById("registerBtn");
-  const errorElement = document.getElementById("autherroror");
+  const errorElement =
+    document.getElementById("authError") ||
+    document.getElementById("autherroror");
+  const nameInput = document.getElementById("name");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const confirmInput = document.getElementById("confirmPassword");
+
+  if (!btn || !errorElement || !nameInput || !emailInput || !passwordInput || !confirmInput) {
+    delete form.dataset.processing;
+    return;
+  }
+
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
   errorElement.style.display = "none";
-  const pw = document.getElementById("password").value;
-  if (pw !== document.getElementById("confirmPassword").value) {
+  errorElement.textContent = "";
+
+  const pw = passwordInput.value;
+  if (pw !== confirmInput.value) {
     errorElement.textContent = "Mật khẩu xác nhận không khớp";
     errorElement.style.display = "block";
     btn.disabled = false;
     btn.innerHTML = originalHTML;
+    delete form.dataset.processing;
     return;
   }
+
   try {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: document.getElementById("name").value,
-        email: document.getElementById("email").value,
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
         password: pw,
       }),
     });
-    const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
+
+    let data = null;
+    try { data = await response.json(); } catch (_) {}
+
+    if (!response.ok) {
+      const msg = data?.message || data?.error || (await response.text()) || "Đăng ký thất bại";
+      throw new Error(msg);
+    }
+    if (!data?.success) throw new Error(data.message || "Đăng ký thất bại");
+
     window.location.href = "/";
   } catch (error) {
-    errorElement.textContent = error.message;
+    errorElement.textContent = error.message || "Có lỗi xảy ra";
     errorElement.style.display = "block";
+  } finally {
     btn.disabled = false;
     btn.innerHTML = originalHTML;
+    delete form.dataset.processing;
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const form = event.target || document.getElementById("loginForm");
+  if (!form) return;
+  if (form.dataset.processing) return;
+  form.dataset.processing = "1";
+
+  const btn = document.getElementById("loginButton");
+  const errorElement =
+    document.getElementById("authError") ||
+    document.getElementById("autherroror");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  if (!btn || !errorElement || !emailInput || !passwordInput) {
+    delete form.dataset.processing;
+    return;
+  }
+
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý ...';
+  errorElement.style.display = "none";
+  errorElement.textContent = "";
+
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: emailInput.value.trim(),
+        password: passwordInput.value,
+      }),
+    });
+
+    let data = null;
+    try { data = await response.json(); } catch (_) {}
+
+    if (!response.ok) {
+      const msg = data?.message || data?.error || (await response.text()) || "Đăng nhập thất bại";
+      throw new Error(msg);
+    }
+    if (!data?.success) throw new Error(data.message || "Đăng nhập thất bại");
+
+    // optional: redirect based on role if returned
+    const role = data?.data?.user?.role || data?.data?.role || data?.role;
+    if (role === "admin") window.location.href = "/admin";
+    else window.location.href = "/";
+  } catch (error) {
+    errorElement.textContent = error.message || "Có lỗi xảy ra";
+    errorElement.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    delete form.dataset.processing;
   }
 }
 
@@ -161,45 +222,62 @@ async function logout() {
 
 /* FAVORITES */
 async function toggleFavorite(slug, name, thumb, year) {
-  const btn = document.getElementById("favoriteButton");
+  const btn = document.getElementById("favBtn") || document.getElementById("favoriteButton");
   if (!btn) return;
+
+  btn.disabled = true;
   try {
-    const checkResponse = await fetch(`/api/favorites/check/${slug}`);
+    const checkResponse = await fetch(`/api/favorites/check/${encodeURIComponent(slug)}`);
     const checkData = await checkResponse.json();
-    if (checkData.data.isFavorite) {
-      await fetch(`/api/favorites/${slug}`, { method: "DELETE" });
+    if (!checkResponse.ok) throw new Error(checkData.message || "Không thể kiểm tra yêu thích");
+
+    if (checkData.data?.isFavorite) {
+      const delRes = await fetch(`/api/favorites/${encodeURIComponent(slug)}`, { method: "DELETE" });
+      const delData = await delRes.json();
+      if (!delRes.ok) throw new Error(delData.message || "Không thể bỏ yêu thích");
       btn.innerHTML = '<i class="fas fa-heart"></i> Yêu Thích';
       btn.querySelector("i").style.color = "inherit";
+      showSuccess("Đã bỏ yêu thích");
     } else {
-      await fetch("/api/favorites", {
+      const addRes = await fetch("/api/favorites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           movieSlug: slug,
           movieName: name,
           movieThumb: thumb,
-          movieYear: year,
+          movieYear: year || undefined,
         }),
       });
-      btn.innerHTML =
-        '<i class="fas fa-heart" style="color:#ef4444;"></i> Đã Thích';
+      const addData = await addRes.json();
+      if (!addRes.ok) throw new Error(addData.message || "Không thể thêm yêu thích");
+      btn.innerHTML = '<i class="fas fa-heart" style="color:#ef4444;"></i> Đã Thích';
+      showSuccess("Đã thêm vào yêu thích");
     }
-  } catch (_) {
-    alert("Có lỗi xảy ra, vui lòng thử lại");
+  } catch (err) {
+    showError(err.message || "Có lỗi xảy ra, vui lòng thử lại");
+  } finally {
+    btn.disabled = false;
   }
 }
 
 async function removeFavorite(slug, element) {
-  if (!confirm("Xóa phim này khỏi danh sách yêu thích?")) return;
+  const ok = await showConfirm("Xóa phim này khỏi danh sách yêu thích?");
+  if (!ok) return;
   try {
-    await fetch(`/api/favorites/${slug}`, { method: "DELETE" });
+    const res = await fetch(`/api/favorites/${encodeURIComponent(slug)}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Không thể xóa");
     const card = element.closest(".fav-card");
-    card.style.transition = "opacity .3s, transform .3s";
-    card.style.opacity = "0";
-    card.style.transform = "scale(0.9)";
-    setTimeout(() => card.remove(), 300);
-  } catch (_) {
-    alert("Có lỗi xảy ra, vui lòng thử lại");
+    if (card) {
+      card.style.transition = "opacity .3s, transform .3s";
+      card.style.opacity = "0";
+      card.style.transform = "scale(0.9)";
+      setTimeout(() => card.remove(), 300);
+    }
+    showSuccess("Đã xóa khỏi danh sách yêu thích");
+  } catch (err) {
+    showError(err.message || "Có lỗi xảy ra, vui lòng thử lại");
   }
 }
 
@@ -216,7 +294,7 @@ async function postComment(event, slug) {
       body: JSON.stringify({ content }),
     });
     const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
+    if (!data.success) throw new Error(data.message);
     const comment = data.data;
     const html = `
       <div class="comment-item" data-id="${comment._id}" style="animation: fadeIn .4s ease;">
@@ -236,13 +314,15 @@ async function postComment(event, slug) {
       .getElementById("commentList")
       .insertAdjacentHTML("afterbegin", html);
     textarea.value = "";
+    showSuccess("Đã gửi bình luận");
   } catch (error) {
-    alert(error.message);
+    showError(error.message || "Không thể gửi bình luận");
   }
 }
 
 async function deleteComment(id) {
-  if (!confirm("Xóa bình luận này?")) return;
+  const ok = await showConfirm("Xóa bình luận này?");
+  if (!ok) return;
   try {
     await fetch(`/api/comments/${id}`, { method: "DELETE" });
     const element = document.querySelector(`.comment-item[data-id="${id}"]`);
@@ -251,8 +331,9 @@ async function deleteComment(id) {
       element.style.opacity = "0";
       setTimeout(() => element.remove(), 300);
     }
+    showSuccess("Đã xóa bình luận");
   } catch (_) {
-    alert("Có lỗi xảy ra");
+    showError("Có lỗi xảy ra");
   }
 }
 
@@ -269,7 +350,7 @@ async function updateProfile(event) {
       }),
     });
     const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
+    if (!data.success) throw new Error(data.message);
     msgElement.className = "alert alert-success";
     msgElement.textContent = "Cập nhật thành công!";
     msgElement.style.display = "block";
@@ -294,7 +375,7 @@ async function changePassword(event) {
       }),
     });
     const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
+    if (!data.success) throw new Error(data.message);
     msgElement.className = "alert alert-success";
     msgElement.textContent = "Đổi mật khẩu thành công!";
     msgElement.style.display = "block";
@@ -315,29 +396,35 @@ async function changeRole(userId, role) {
       body: JSON.stringify({ role }),
     });
     const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
+    if (!data.success) throw new Error(data.message);
+    showSuccess("Đã cập nhật vai trò người dùng");
   } catch (error) {
-    alert(error.message);
+    showError(error.message);
     location.reload();
   }
 }
 
 async function deleteUser(userId) {
-  if (!confirm("Xóa user này? Hành động này không thể hoàn tác!")) return;
+  const ok = await showConfirm("Xóa user này? Hành động này không thể hoàn tác!", {
+    title: "Xóa người dùng",
+    confirmText: "Xóa",
+  });
+  if (!ok) return;
   try {
     const response = await fetch(`/api/admin/users/${userId}`, {
       method: "DELETE",
     });
     const data = await response.json();
-    if (!data.success) throw new erroror(data.message);
+    if (!data.success && response.ok === false) throw new Error(data.message);
     const row = document.getElementById(`user-row-${userId}`);
     if (row) {
       row.style.transition = "opacity .3s";
       row.style.opacity = "0";
       setTimeout(() => row.remove(), 300);
     }
+    showSuccess("Đã xóa người dùng");
   } catch (error) {
-    alert(error.message);
+    showError(error.message || "Không thể xóa user");
   }
 }
 
@@ -367,4 +454,24 @@ async function loadDropdowns() {
   } catch (_) {}
 }
 
-document.addEventListener("DOMContentLoaded", loadDropdowns);
+document.addEventListener("DOMContentLoaded", () => {
+  loadDropdowns();
+
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm) loginForm.addEventListener("submit", handleLogin);
+
+  const registerForm = document.getElementById("registerForm");
+  if (registerForm) registerForm.addEventListener("submit", handleRegister);
+
+  const favBtn = document.getElementById("favBtn");
+  if (favBtn) {
+    favBtn.addEventListener("click", () => {
+      toggleFavorite(
+        favBtn.dataset.slug,
+        favBtn.dataset.name,
+        favBtn.dataset.thumb,
+        favBtn.dataset.year ? parseInt(favBtn.dataset.year, 10) : undefined,
+      );
+    });
+  }
+});

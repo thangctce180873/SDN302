@@ -4,7 +4,7 @@
       <i class="fas fa-bars"></i>
     </button>
     <a href="/admin" class="adm-header-brand">
-      <img src="/image/NS.png" alt="NightSweet" class="adm-header-logo">
+      <img src="/image/logo.png" alt="NightSweet" class="adm-header-logo">
       <span class="adm-header-brand-text">Admin Panel</span>
     </a>
   </div>
@@ -22,12 +22,14 @@
       <i class="fas fa-external-link-alt"></i>
       <span>Xem Website</span>
     </a>
+
     <div class="adm-header-user">
+      <% const uname = (typeof user !== 'undefined' && user && user.name) ? user.name : 'Admin'; %>
       <button class="adm-header-user-btn">
-        <div class="adm-header-avatar"><%= user.name.charAt(0).toUpperCase() %></div>
+        <div class="adm-header-avatar"><%= uname.charAt(0).toUpperCase() %></div>
         <div class="adm-header-user-info">
-          <span class="adm-header-user-name"><%= user.name %></span>
-          <span class="adm-header-user-role">Admin</span>
+          <span class="adm-header-user-name"><%= uname %></span>
+          <span class="adm-header-user-role"><%= (user && user.role) ? user.role : 'admin' %></span>
         </div>
         <i class="fas fa-chevron-down"></i>
       </button>
