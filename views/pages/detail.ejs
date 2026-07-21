@@ -31,6 +31,16 @@
       <% if (movie.content) { %>
         <div class="movie-desc"><%= movie.content.replace(/<[^>]*>/g, '') %></div>
       <% } %>
+      <div class="movie-rating" id="movieRating" data-slug="<%= movie.slug %>">
+        <div class="stars">
+          <i class="fas fa-star" data-val="1"></i>
+          <i class="fas fa-star" data-val="2"></i>
+          <i class="fas fa-star" data-val="3"></i>
+          <i class="fas fa-star" data-val="4"></i>
+          <i class="fas fa-star" data-val="5"></i>
+        </div>
+        <span id="ratingStats">(Đang tải đánh giá...)</span>
+      </div>
       <div class="movie-actions">
         <a href="/watch/<%= movie.slug %>" class="play-btn" title="Xem phim">
           <i class="fas fa-play"></i>

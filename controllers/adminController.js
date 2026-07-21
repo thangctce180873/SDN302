@@ -5,8 +5,26 @@ const Report = require("../models/Report");
 const Review = require("../models/Review");
 const Notification = require("../models/Notification");
 const WatchHistory = require("../models/WatchHistory");
+const ActivityLog = require("../models/ActivityLog");
+
 let Movie;
 try { Movie = require("../models/Movie"); } catch (e) { Movie = null; }
+
+async function logActivity(req, action, target, detail = "") {
+  try {
+    const ip = req.ip || req.connection?.remoteAddress || "";
+    const log = new ActivityLog({
+      user: req.user ? req.user._id : null,
+      action,
+      target,
+      detail,
+      ip,
+    });
+    await log.save();
+  } catch (err) {
+    console.error("Failed to log activity:", err);
+  }
+}
 
 module.exports = {
   getStats: async (req, res) => {
@@ -40,6 +58,7 @@ module.exports = {
       if (!u) return res.status(404).json({ message: "User not found" });
       u.role = role;
       await u.save();
+      await logActivity(req, "Cập nhật quyền", `Người dùng: ${u.email}`, `Vai trò mới: ${role}`);
       return res.json({ message: "Updated", user: u });
     } catch (err) {
       console.error("updateUserRole error:", err);
@@ -50,6 +69,7 @@ module.exports = {
   deleteUser: async (req, res) => {
     try {
       await User.findByIdAndDelete(req.params.id);
+      await logActivity(req, "Xóa người dùng", `User ID: ${req.params.id}`);
       return res.json({ message: "Deleted" });
     } catch (err) {
       console.error("deleteUser error:", err);
@@ -60,6 +80,7 @@ module.exports = {
   deleteComment: async (req, res) => {
     try {
       await Comment.findByIdAndDelete(req.params.id);
+      await logActivity(req, "Xóa bình luận", `Comment ID: ${req.params.id}`);
       return res.json({ message: "Deleted" });
     } catch (err) {
       console.error("deleteComment error:", err);
@@ -98,6 +119,7 @@ module.exports = {
       if (status) r.status = status;
       if (adminNote !== undefined) r.adminNote = adminNote;
       await r.save();
+      await logActivity(req, "Cập nhật báo cáo", `Report ID: ${r._id}`, `Trạng thái: ${status || 'Không đổi'}`);
       return res.json({ message: "Updated", report: r });
     } catch (err) {
       console.error("updateReportStatus error:", err);
@@ -108,6 +130,7 @@ module.exports = {
   deleteReport: async (req, res) => {
     try {
       await Report.findByIdAndDelete(req.params.id);
+      await logActivity(req, "Xóa báo cáo", `Report ID: ${req.params.id}`);
       return res.json({ message: "Deleted" });
     } catch (err) {
       console.error("deleteReport error:", err);
@@ -118,6 +141,7 @@ module.exports = {
   deleteReview: async (req, res) => {
     try {
       await Review.findByIdAndDelete(req.params.id);
+      await logActivity(req, "Xóa review", `Review ID: ${req.params.id}`);
       return res.json({ message: "Deleted" });
     } catch (err) {
       console.error("deleteReview error:", err);
@@ -236,6 +260,7 @@ module.exports = {
         ),
       });
       await doc.save();
+      await logActivity(req, "Import phim", `Phim: ${doc.name}`);
       return res.json({ message: "Imported", movie: doc });
     } catch (err) {
       console.error("importMovie error:", err);
@@ -282,6 +307,7 @@ module.exports = {
       if (!mv) return res.status(404).json({ message: "Movie not found" });
       Object.assign(mv, updates);
       await mv.save();
+      await logActivity(req, "Cập nhật phim", `Phim: ${mv.name}`);
       return res.json({ message: "Updated", movie: mv });
     } catch (err) {
       console.error("updateLocalMovie error:", err);
@@ -293,6 +319,7 @@ module.exports = {
     try {
       if (!Movie) return res.status(501).json({ message: "Local Movie model not available" });
       await Movie.findByIdAndDelete(req.params.id);
+      await logActivity(req, "Xóa phim", `Movie ID: ${req.params.id}`);
       return res.json({ message: "Deleted" });
     } catch (err) {
       console.error("deleteLocalMovie error:", err);

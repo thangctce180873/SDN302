@@ -1995,3 +1995,34 @@ body.admin-body img[src*="logo.png"] {
   .ns-toast-in { transform: translateY(0); }
   .ns-toast-out { transform: translateY(16px); }
 }
+
+/* ===================================================================
+   RATING
+   =================================================================== */
+.movie-rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.movie-rating .stars {
+  display: flex;
+  gap: 4px;
+  cursor: pointer;
+}
+.movie-rating .stars i {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 1.2rem;
+  transition: color 0.2s;
+}
+.movie-rating .stars i.active-avg {
+  color: #f59e0b;
+}
+.movie-rating .stars i.rated-by-user {
+  color: #fcd34d;
+  text-shadow: 0 0 10px rgba(252, 211, 77, 0.5);
+}
+#ratingStats {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}

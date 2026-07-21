@@ -469,6 +469,62 @@ async function changePassword(event) {
   }
 }
 
+/* RATING */
+async function loadRating(slug) {
+  try {
+    const res = await fetch(`/api/ratings/${slug}`);
+    const data = await res.json();
+    if (data.success) {
+      updateRatingUI(data.data.avgScore, data.data.totalRatings, data.data.userScore);
+    }
+  } catch (error) {
+    console.error('Lỗi tải rating:', error);
+  }
+}
+
+async function submitRating(slug, score) {
+  try {
+    const res = await fetch(`/api/ratings/${slug}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showSuccess("Đánh giá thành công!");
+      updateRatingUI(data.data.avgScore, data.data.totalRatings, data.data.userScore);
+    } else {
+      showError(data.message || "Lỗi đánh giá");
+    }
+  } catch (error) {
+    showError("Không thể gửi đánh giá");
+  }
+}
+
+function updateRatingUI(avgScore, totalRatings, userScore) {
+  const stats = document.getElementById("ratingStats");
+  if (stats) {
+    stats.innerHTML = `<strong>${avgScore}</strong>/5 (${totalRatings} đánh giá)`;
+  }
+  const stars = document.querySelectorAll(".movie-rating .stars i");
+  stars.forEach((star, idx) => {
+    const val = idx + 1;
+    if (userScore) {
+      if (val <= userScore) {
+        star.className = "fas fa-star rated-by-user";
+      } else {
+        star.className = "fas fa-star";
+      }
+    } else {
+      if (val <= Math.round(avgScore)) {
+        star.className = "fas fa-star active-avg";
+      } else {
+        star.className = "fas fa-star";
+      }
+    }
+  });
+}
+
 /* ADMIN */
 async function changeRole(userId, role) {
   try {
@@ -572,6 +628,29 @@ document.addEventListener("DOMContentLoaded", () => {
         wlBtn.dataset.thumb,
         wlBtn.dataset.year ? parseInt(wlBtn.dataset.year, 10) : undefined,
       );
+    });
+  }
+
+  const movieRating = document.getElementById("movieRating");
+  if (movieRating) {
+    const slug = movieRating.dataset.slug;
+    loadRating(slug);
+    const stars = movieRating.querySelectorAll(".stars i");
+    stars.forEach(star => {
+      star.addEventListener("click", () => {
+        const val = star.dataset.val;
+        submitRating(slug, val);
+      });
+      star.addEventListener("mouseover", () => {
+        const val = star.dataset.val;
+        stars.forEach((s, idx) => {
+          if (idx < val) s.style.color = "#fcd34d";
+          else s.style.color = "rgba(255,255,255,0.2)";
+        });
+      });
+      star.addEventListener("mouseout", () => {
+        stars.forEach(s => s.style.color = "");
+      });
     });
   }
 });
