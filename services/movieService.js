@@ -46,8 +46,35 @@ const extractItems = (data) => {
   return [];
 };
 
+/** Chuẩn hóa response danh sách phim (phim bộ, phim lẻ, thể loại, quốc gia...) */
+const normalizeListResponse = (data) => {
+  if (!data) return { items: [], pagination: {}, titlePage: "" };
+  return {
+    items: data.items || data.data?.items || [],
+    pagination:
+      data.pagination ||
+      data.data?.params?.pagination ||
+      data.data?.pagination ||
+      {},
+    titlePage: data.titlePage || data.data?.titlePage || "",
+  };
+};
+
+const LIST_LABELS = {
+  "phim-bo": "Phim Bộ",
+  "phim-le": "Phim Lẻ",
+  "hoat-hinh": "Hoạt Hình",
+  "tv-shows": "TV Shows",
+  "phim-chieu-rap": "Phim Chiếu Rạp",
+};
+
+const getListLabel = (type) => LIST_LABELS[type] || type;
+
 module.exports = {
   extractItems,
+  normalizeListResponse,
+  getListLabel,
+  LIST_LABELS,
   getNewMovies: (page = 1) => get("/danh-sach/phim-moi-cap-nhat", { page }),
   getMovieDetail: (slug) => get(`/phim/${slug}`),
   getMovieList: (type, params = {}) => get(`/danh-sach/${type}`, params),

@@ -281,6 +281,60 @@ async function removeFavorite(slug, element) {
   }
 }
 
+/* WATCHLIST */
+async function toggleWatchlist(slug, name, thumb, year) {
+  const btn = document.getElementById("wlBtn");
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    const checkRes = await fetch(`/api/watchlist/check/${encodeURIComponent(slug)}`);
+    const checkData = await checkRes.json();
+    if (!checkRes.ok) throw new Error(checkData.message || "Lỗi kiểm tra");
+    const inList = checkData.data?.inWatchlist ?? checkData.inWatchlist;
+    if (inList) {
+      const delRes = await fetch(`/api/watchlist/${encodeURIComponent(slug)}`, { method: "DELETE" });
+      const delData = await delRes.json();
+      if (!delRes.ok) throw new Error(delData.message || "Không thể xóa");
+      btn.innerHTML = '<i class="fas fa-bookmark"></i> Xem Sau';
+      btn.querySelector("i").style.color = "inherit";
+      showSuccess("Đã xóa khỏi danh sách xem sau");
+    } else {
+      const addRes = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movieSlug: slug, movieName: name, movieThumb: thumb, movieYear: year || undefined }),
+      });
+      const addData = await addRes.json();
+      if (!addRes.ok) throw new Error(addData.message || "Không thể thêm");
+      btn.innerHTML = '<i class="fas fa-bookmark" style="color:#f59e0b;"></i> Đã Lưu';
+      showSuccess("Đã thêm vào danh sách xem sau");
+    }
+  } catch (err) {
+    showError(err.message || "Có lỗi xảy ra");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function removeWatchlist(slug) {
+  const ok = await showConfirm("Xóa phim khỏi danh sách xem sau?");
+  if (!ok) return;
+  try {
+    const res = await fetch(`/api/watchlist/${encodeURIComponent(slug)}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Không thể xóa");
+    const el = document.getElementById(`wl-${slug}`);
+    if (el) {
+      el.style.transition = "opacity .3s";
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 300);
+    }
+    showSuccess("Đã xóa khỏi danh sách xem sau");
+  } catch (err) {
+    showError(err.message || "Có lỗi xảy ra");
+  }
+}
+
 /* COMMENTS */
 async function postComment(event, slug) {
   event.preventDefault();
@@ -340,32 +394,50 @@ async function deleteComment(id) {
 /* PROFILE */
 async function updateProfile(event) {
   event.preventDefault();
-  const msgElement = document.getElementById("profileMessage");
+  const form = event.currentTarget;
+  const msgElement = document.getElementById("profileMsg");
+  const btn = form.querySelector('button[type="submit"]');
+  const original = btn?.innerHTML;
   try {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...'; }
     const response = await fetch("/api/users/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: document.getElementById("profileName").value,
+        name: document.getElementById("profileName").value.trim(),
       }),
     });
     const data = await response.json();
-    if (!data.success) throw new Error(data.message);
-    msgElement.className = "alert alert-success";
-    msgElement.textContent = "Cập nhật thành công!";
-    msgElement.style.display = "block";
-    setTimeout(() => location.reload(), 800);
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || (Array.isArray(data.errors) ? data.errors.join(", ") : "Cập nhật thất bại"));
+    }
+    if (msgElement) {
+      msgElement.className = "alert alert-success";
+      msgElement.textContent = "Cập nhật thành công!";
+      msgElement.style.display = "block";
+    }
+    showSuccess("Cập nhật tài khoản thành công!");
+    setTimeout(() => location.reload(), 900);
   } catch (error) {
-    msgElement.className = "alert alert-erroror";
-    msgElement.textContent = error.message;
-    msgElement.style.display = "block";
+    if (msgElement) {
+      msgElement.className = "alert alert-error";
+      msgElement.textContent = error.message;
+      msgElement.style.display = "block";
+    }
+    showError(error.message || "Không thể cập nhật");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
   }
 }
 
 async function changePassword(event) {
   event.preventDefault();
-  const msgElement = document.getElementById("passwordMessage");
+  const form = event.currentTarget;
+  const msgElement = document.getElementById("passwordMsg");
+  const btn = form.querySelector('button[type="submit"]');
+  const original = btn?.innerHTML;
   try {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; }
     const response = await fetch("/api/users/change-password", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -375,15 +447,25 @@ async function changePassword(event) {
       }),
     });
     const data = await response.json();
-    if (!data.success) throw new Error(data.message);
-    msgElement.className = "alert alert-success";
-    msgElement.textContent = "Đổi mật khẩu thành công!";
-    msgElement.style.display = "block";
-    event.target.reset();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || (Array.isArray(data.errors) ? data.errors.join(", ") : "Đổi mật khẩu thất bại"));
+    }
+    if (msgElement) {
+      msgElement.className = "alert alert-success";
+      msgElement.textContent = "Đổi mật khẩu thành công!";
+      msgElement.style.display = "block";
+    }
+    showSuccess("Đổi mật khẩu thành công!");
+    form.reset();
   } catch (error) {
-    msgElement.className = "alert alert-erroror";
-    msgElement.textContent = error.message;
-    msgElement.style.display = "block";
+    if (msgElement) {
+      msgElement.className = "alert alert-error";
+      msgElement.textContent = error.message;
+      msgElement.style.display = "block";
+    }
+    showError(error.message || "Không thể đổi mật khẩu");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
   }
 }
 
@@ -440,16 +522,22 @@ async function loadDropdowns() {
 
     const categoryElement = document.getElementById("categoryDropdown");
     if (categoryElement && categoryData.success) {
-      const categories = Array.isArray(categoryData.data)
-        ? categoryData.data
-        : [];
-      categoryElement.innerHTML = `<div class="topbar-drop-grid">${categories.map((comment) => `<a href="/category/${comment.slug}">${comment.name}</a>`).join("")}</div>`;
+      const categories = Array.isArray(categoryData.data) ? categoryData.data : [];
+      if (categories.length) {
+        categoryElement.innerHTML = `<div class="topbar-drop-grid">${categories.map((c) => `<a href="/category/${c.slug}">${c.name}</a>`).join("")}</div>`;
+      } else {
+        categoryElement.innerHTML = '<p class="topbar-drop-loading">Không tải được thể loại</p>';
+      }
     }
 
     const countryElement = document.getElementById("countryDropdown");
     if (countryElement && countryData.success) {
       const countries = Array.isArray(countryData.data) ? countryData.data : [];
-      countryElement.innerHTML = `<div class="topbar-drop-grid">${countries.map((comment) => `<a href="/country/${comment.slug}">${comment.name}</a>`).join("")}</div>`;
+      if (countries.length) {
+        countryElement.innerHTML = `<div class="topbar-drop-grid">${countries.map((c) => `<a href="/country/${c.slug}">${c.name}</a>`).join("")}</div>`;
+      } else {
+        countryElement.innerHTML = '<p class="topbar-drop-loading">Không tải được quốc gia</p>';
+      }
     }
   } catch (_) {}
 }
@@ -471,6 +559,18 @@ document.addEventListener("DOMContentLoaded", () => {
         favBtn.dataset.name,
         favBtn.dataset.thumb,
         favBtn.dataset.year ? parseInt(favBtn.dataset.year, 10) : undefined,
+      );
+    });
+  }
+
+  const wlBtn = document.getElementById("wlBtn");
+  if (wlBtn) {
+    wlBtn.addEventListener("click", () => {
+      toggleWatchlist(
+        wlBtn.dataset.slug,
+        wlBtn.dataset.name,
+        wlBtn.dataset.thumb,
+        wlBtn.dataset.year ? parseInt(wlBtn.dataset.year, 10) : undefined,
       );
     });
   }

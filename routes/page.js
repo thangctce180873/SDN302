@@ -38,8 +38,9 @@ router.get("/", async (request, response) => {
     ]);
     const items = newMovies.items || [];
     const theaterItems = theaterMovies.items || [];
-    const singleItems = singleMovies.data?.items || [];
-    const seriesItems = seriesMovies.data?.items || [];
+    const singleItems = movieService.normalizeListResponse(singleMovies).items;
+    const seriesItems = movieService.normalizeListResponse(seriesMovies).items;
+    const cartoonItems = movieService.normalizeListResponse(cartoonMovies).items;
 
     const heroSlugs = theaterItems.slice(0, 9).map((m) => m.slug);
 
@@ -62,7 +63,7 @@ router.get("/", async (request, response) => {
       theaterMovies: theaterItems.slice(0, 12),
       singleMovies: singleItems,
       seriesMovies: seriesItems,
-      cartoonMovies: cartoonMovies.data?.items || [],
+      cartoonMovies: cartoonItems,
     });
   } catch (error) {
     console.error("Home error:", error.message);
@@ -90,8 +91,13 @@ router.get("/movie/:slug", async (request, response) => {
   try {
     const movie = await movieService.getMovieDetail(request.params.slug);
     let isFavorite = false;
+    let isWatchlist = false;
     if (response.locals.user) {
       isFavorite = !!(await Favorite.findOne({
+        user: response.locals.user._id,
+        movieSlug: request.params.slug,
+      }));
+      isWatchlist = !!(await Watchlist.findOne({
         user: response.locals.user._id,
         movieSlug: request.params.slug,
       }));
@@ -104,6 +110,7 @@ router.get("/movie/:slug", async (request, response) => {
       movie: movie.movie,
       episodes: movie.episodes || [],
       isFavorite,
+      isWatchlist,
       comments,
       user: response.locals.user,
     });
@@ -166,13 +173,14 @@ router.get("/search", async (request, response) => {
 
   if (keyword) {
     try {
-      const data = await movieService.searchMovies({
+      const raw = await movieService.searchMovies({
         keyword,
         page,
         limit: 24,
       });
-      movies = data.data?.items || [];
-      pagination = data.data?.params?.pagination || {};
+      const normalized = movieService.normalizeListResponse(raw);
+      movies = normalized.items;
+      pagination = normalized.pagination;
     } catch (error) {
       console.error("Search error:", error.message);
     }
@@ -190,17 +198,19 @@ router.get("/category/:slug", async (request, response) => {
   const { page = 1 } = request.query;
 
   try {
-    const data = await movieService.getCategoryMovies(request.params.slug, {
+    const raw = await movieService.getCategoryMovies(request.params.slug, {
       page,
       limit: 24,
     });
+    const { items, pagination, titlePage } = movieService.normalizeListResponse(raw);
     response.render("pages/category", {
-      title: data.data?.titlePage || "Thể Loại",
-      movies: data.data?.items || [],
-      pagination: data.data?.params?.pagination || {},
+      title: titlePage || "Thể Loại",
+      movies: items,
+      pagination,
       currentPage: parseInt(page),
       slug: request.params.slug,
-      sectionTitle: data.data?.titlePage || "",
+      sectionTitle: titlePage || request.params.slug,
+      listType: "category",
     });
   } catch (error) {
     response.redirect("/");
@@ -211,17 +221,19 @@ router.get("/country/:slug", async (request, response) => {
   const { page = 1 } = request.query;
 
   try {
-    const data = await movieService.getCountryMovies(request.params.slug, {
+    const raw = await movieService.getCountryMovies(request.params.slug, {
       page,
       limit: 24,
     });
+    const { items, pagination, titlePage } = movieService.normalizeListResponse(raw);
     response.render("pages/category", {
-      title: data.data?.titlePage || "Quốc Gia",
-      movies: data.data?.items || [],
-      pagination: data.data?.params?.pagination || {},
+      title: titlePage || "Quốc Gia",
+      movies: items,
+      pagination,
       currentPage: parseInt(page),
       slug: request.params.slug,
-      sectionTitle: data.data?.titlePage || "",
+      sectionTitle: titlePage || request.params.slug,
+      listType: "country",
     });
   } catch (error) {
     response.redirect("/");
@@ -230,48 +242,79 @@ router.get("/country/:slug", async (request, response) => {
 
 router.get("/list/:type", async (request, response) => {
   const { page = 1 } = request.query;
+  const type = request.params.type;
 
   try {
-    const data = await movieService.getMovieList(request.params.type, {
+    const raw = await movieService.getMovieList(type, {
       page,
       limit: 24,
     });
+    const { items, pagination, titlePage } = movieService.normalizeListResponse(raw);
     response.render("pages/category", {
-      title: data.data?.titlePage || request.params.type,
-      movies: data.data?.items || [],
-      pagination: data.data?.params?.pagination || {},
+      title: titlePage || movieService.getListLabel(type),
+      movies: items,
+      pagination,
       currentPage: parseInt(page),
-      slug: request.params.type,
-      sectionTitle: data.data?.titlePage || request.params.type,
+      slug: type,
+      sectionTitle: titlePage || movieService.getListLabel(type),
+      listType: type,
     });
   } catch (error) {
-    response.redirect("/");
+    console.error("List page error:", error.message);
+    response.render("pages/category", {
+      title: movieService.getListLabel(type),
+      movies: [],
+      pagination: {},
+      currentPage: 1,
+      slug: type,
+      sectionTitle: movieService.getListLabel(type),
+      listType: type,
+    });
   }
 });
 
 router.get("/profile", protect, (request, response) => {
-  response.render("pages/profile", { title: "Tài Khoản" });
+  response.render("pages/profile", {
+    title: "Tài Khoản",
+    user: request.user,
+  });
 });
 
 router.get("/favorites", protect, async (request, response) => {
   const favorites = await Favorite.find({ user: request.user._id }).sort(
     "-createdAt",
   );
-  response.render("pages/favorites", { title: "Phim Yêu Thích", favorites });
+  response.render("pages/favorites", {
+    title: "Phim Yêu Thích",
+    favorites,
+    user: request.user,
+  });
 });
 
 router.get("/watchlist", protect, async (request, response) => {
-  const watchlist = await Watchlist.find({ user: request.user._id }).sort(
+  const list = await Watchlist.find({ user: request.user._id }).sort(
     "-createdAt",
   );
-  response.render("pages/watchlist", { title: "Danh Sách Xem Sau", watchlist });
+  response.render("pages/watchlist", {
+    title: "Danh Sách Xem Sau",
+    list,
+    user: request.user,
+  });
 });
 
-router.get("/watchhistory", protect, async (request, response) => {
-  const watchHistory = await WatchHistory.find({ user: request.user._id })
+router.get("/history", protect, async (request, response) => {
+  const history = await WatchHistory.find({ user: request.user._id })
     .sort("-watchedAt")
     .limit(100);
-  response.render("pages/history", { title: "Lịch Sử Xem", watchHistory });
+  response.render("pages/history", {
+    title: "Lịch Sử Xem",
+    history,
+    user: request.user,
+  });
+});
+
+router.get("/watchhistory", protect, (request, response) => {
+  response.redirect("/history");
 });
 
 router.get("/notifications", protect, async (request, response) => {
@@ -289,6 +332,7 @@ router.get("/notifications", protect, async (request, response) => {
   response.render("pages/notifications", {
     title: "Thông Báo",
     notifs,
+    user: request.user,
   });
 });
 

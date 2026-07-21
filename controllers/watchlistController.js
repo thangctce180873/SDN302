@@ -53,7 +53,7 @@ exports.checkWatchlist = async (request, response) => {
       user: request.user._id,
       movieSlug: request.params.movieSlug,
     });
-    response.json({ success: true, inWatchlist: !!exists });
+    response.json({ success: true, data: { inWatchlist: !!exists } });
   } catch (error) {
     response.status(500).json({ success: false, message: error.message });
   }

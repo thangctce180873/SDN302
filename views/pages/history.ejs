@@ -1,30 +1,47 @@
-<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const imgUrl = (url) => { if (!url) return '/image/logo.png'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+
 <div class="container page-section">
-  <div class="adm-page-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div class="page-header">
     <div>
-      <h1 class="adm-page-title">Lịch Sử Xem</h1>
-      <p class="adm-page-desc"><%= history.length %> phim đã xem</p>
+      <h1><i class="fas fa-history"></i> Lịch Sử Xem</h1>
+      <p class="page-sub"><%= history.length %> phim đã xem</p>
     </div>
-    <% if (history.length > 0) { %>
-      <button class="adm-btn" onclick="clearHistory()" style="background:var(--red);">
-        <i class="fas fa-trash"></i> Xóa Lịch Sử
-      </button>
-    <% } %>
+    <div style="display:flex;gap:8px;">
+      <% if (history.length > 0) { %>
+        <button type="button" class="btn btn-danger btn-sm" onclick="clearHistory()">
+          <i class="fas fa-trash"></i> Xóa lịch sử
+        </button>
+      <% } %>
+      <a href="/" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Trang chủ</a>
+    </div>
   </div>
+
   <% if (history.length > 0) { %>
-    <div class="wp-related-grid" style="grid-template-columns:repeat(6,1fr);">
+    <div class="movie-grid">
       <% history.forEach(h => { %>
-        <a href="/watch/<%= h.movieSlug %>" class="wp-related-card">
-          <div class="wp-related-thumb"><img src="<%= imgUrl(h.movieThumb) %>" alt="<%= h.movieName %>" loading="lazy"></div>
-          <p class="wp-related-name"><%= h.movieName %></p>
-          <span class="wp-related-year"><%= h.episodeName ? h.episodeName : '' %> · <%= new Date(h.watchedAt).toLocaleDateString('vi-VN') %></span>
+        <a href="/watch/<%= h.movieSlug %>?ep=<%= h.episodeIndex || 0 %>" class="movie-card">
+          <div class="movie-card-img">
+            <img src="<%= imgUrl(h.movieThumb) %>" alt="<%= h.movieName %>" loading="lazy">
+            <% if (h.episodeName) { %><span class="badge ep"><%= h.episodeName %></span><% } %>
+            <div class="card-overlay"><i class="fas fa-play-circle"></i></div>
+          </div>
+          <div class="movie-card-info">
+            <h3><%= h.movieName %></h3>
+            <p><%= new Date(h.watchedAt || h.updatedAt).toLocaleString('vi-VN') %></p>
+          </div>
         </a>
       <% }) %>
     </div>
   <% } else { %>
-    <p class="adm-empty">Bạn chưa xem phim nào</p>
+    <div class="empty-state">
+      <i class="fas fa-clock"></i>
+      <h1>Chưa có lịch sử xem</h1>
+      <p>Xem phim khi đã đăng nhập — lịch sử sẽ tự lưu khi bạn tạm dừng hoặc rời trang</p>
+      <a href="/" class="btn btn-primary btn-lg">Xem Phim Ngay</a>
+    </div>
   <% } %>
 </div>
+
 <script>
 async function clearHistory() {
   const ok = await showConfirm('Xóa toàn bộ lịch sử xem?', { title: 'Xóa lịch sử', confirmText: 'Xóa' });

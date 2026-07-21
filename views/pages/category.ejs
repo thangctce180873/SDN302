@@ -1,10 +1,23 @@
-<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const imgUrl = (url) => { if (!url) return '/image/logo.png'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const isSeries = typeof listType !== 'undefined' && ['phim-bo', 'tv-shows', 'hoat-hinh'].includes(listType); %>
 
 <div class="container page-section">
   <div class="page-header">
-    <h1><i class="fas fa-tags"></i> <%= sectionTitle %></h1>
+    <div>
+      <h1><i class="fas fa-<%= listType === 'category' ? 'tags' : listType === 'country' ? 'globe' : 'film' %>"></i> <%= sectionTitle %></h1>
+      <p class="page-sub"><%= movies.length %> phim<% if (pagination.totalItems) { %> · Tổng <%= pagination.totalItems %><% } %></p>
+    </div>
     <a href="/" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Trang chủ</a>
   </div>
+
+  <% if (typeof listType !== 'undefined' && listType !== 'category' && listType !== 'country') { %>
+  <div class="list-type-tabs">
+    <a href="/list/phim-bo" class="list-type-tab <%= listType === 'phim-bo' ? 'active' : '' %>"><i class="fas fa-layer-group"></i> Phim Bộ</a>
+    <a href="/list/phim-le" class="list-type-tab <%= listType === 'phim-le' ? 'active' : '' %>"><i class="fas fa-film"></i> Phim Lẻ</a>
+    <a href="/list/hoat-hinh" class="list-type-tab <%= listType === 'hoat-hinh' ? 'active' : '' %>"><i class="fas fa-child"></i> Hoạt Hình</a>
+    <a href="/list/tv-shows" class="list-type-tab <%= listType === 'tv-shows' ? 'active' : '' %>"><i class="fas fa-tv"></i> TV Shows</a>
+  </div>
+  <% } %>
 
   <% if (movies.length > 0) { %>
     <div class="movie-grid">
@@ -14,11 +27,16 @@
             <img src="<%= imgUrl(item.poster_url || item.thumb_url) %>" alt="<%= item.name %>" loading="lazy">
             <% if (item.quality) { %><span class="badge quality"><%= item.quality %></span><% } %>
             <% if (item.lang) { %><span class="badge lang"><%= item.lang %></span><% } %>
+            <% if (item.episode_current) { %><span class="badge ep"><%= item.episode_current %></span><% } %>
             <div class="card-overlay"><i class="fas fa-play-circle"></i></div>
           </div>
           <div class="movie-card-info">
             <h3><%= item.name %></h3>
-            <p><%= item.year %></p>
+            <p>
+              <%= item.year || '' %>
+              <% if (item.episode_current && isSeries) { %> &bull; <%= item.episode_current %><% } %>
+              <% if (item.time && isSeries) { %> &bull; <%= item.time %><% } %>
+            </p>
           </div>
         </a>
       <% }) %>
@@ -46,7 +64,7 @@
     <div class="empty-state">
       <i class="fas fa-film"></i>
       <h1>Chưa có phim</h1>
-      <p>Danh mục này chưa có phim nào</p>
+      <p>Danh mục này chưa có phim nào hoặc API đang tải chậm</p>
       <a href="/" class="btn btn-primary">Về Trang Chủ</a>
     </div>
   <% } %>

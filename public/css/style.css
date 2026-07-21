@@ -163,7 +163,8 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
   backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255,255,255,.06);
 }
-.topbar-drop:hover .topbar-drop-panel { display: block; }
+.topbar-drop:hover .topbar-drop-panel,
+.topbar-drop-panel:hover { display: block; }
 .topbar-drop-panel .topbar-drop-grid {
   max-width: 1400px; margin: 0 auto; padding: 24px 24px 28px;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -219,7 +220,8 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
   display: none; position: absolute; top: 100%; right: 0;
   margin-top: 0; padding-top: 8px; z-index: 100;
 }
-.topbar-user:hover .topbar-user-panel { display: block; }
+.topbar-user:hover .topbar-user-panel,
+.topbar-user-panel:hover { display: block; }
 .topbar-user-panel::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px;
 }
@@ -936,6 +938,30 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
   display: flex; align-items: center; gap: 10px;
 }
 .page-header h1 i { color: var(--accent); }
+.page-sub { font-size: .84rem; color: var(--text-muted); margin-top: 4px; }
+
+.list-type-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 24px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.list-type-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: .82rem; font-weight: 500;
+  color: var(--text-muted); background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  transition: all .2s;
+}
+.list-type-tab:hover { color: var(--text); border-color: rgba(255,255,255,.15); }
+.list-type-tab.active {
+  color: #fff; background: var(--accent);
+  border-color: var(--accent);
+}
+.badge.ep {
+  bottom: 10px; left: 10px; top: auto; right: auto;
+  background: rgba(0,0,0,.75); font-size: .68rem;
+}
 
 .search-page-form {
   display: flex; gap: 12px; margin-bottom: 28px;
@@ -1173,12 +1199,21 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
 .adm-header-user-role { font-size: .65rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
 .adm-header-user-btn i.fa-chevron-down { font-size: .6rem; color: #64748b; margin-left: 2px; }
 .adm-header-dropdown {
-  position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px;
-  background: #1a1a2e; border: 1px solid rgba(255,255,255,.08);
-  border-radius: 12px; padding: 6px; display: none;
-  box-shadow: 0 12px 40px rgba(0,0,0,.5); z-index: 200;
+  position: absolute; top: 100%; right: 0; min-width: 200px;
+  padding-top: 8px; margin-top: 0;
+  background: transparent; border: none; border-radius: 0;
+  display: none; box-shadow: none; z-index: 200;
 }
-.adm-header-user:hover .adm-header-dropdown { display: block; }
+.adm-header-dropdown::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+}
+.adm-header-dropdown-inner {
+  background: #1a1a2e; border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 6px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+}
+.adm-header-user:hover .adm-header-dropdown,
+.adm-header-dropdown:hover { display: block; }
 .adm-header-dropdown a {
   display: flex; align-items: center; gap: 10px; padding: 10px 14px;
   border-radius: 8px; font-size: .82rem; color: #94a3b8; transition: all .15s;

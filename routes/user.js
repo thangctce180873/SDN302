@@ -5,6 +5,11 @@ const {
   changePassword,
 } = require("../controllers/userController");
 const { protect } = require("../middleware/auth");
+const {
+  profileUpdateRules,
+  passwordChangeRules,
+  handleValidation,
+} = require("../middleware/validators");
 
 /**
  * @swagger
@@ -53,7 +58,7 @@ router.get("/profile", getProfile);
  *       200:
  *         description: Profile updated successfully
  */
-router.put("/profile", updateProfile);
+router.put("/profile", profileUpdateRules, handleValidation, updateProfile);
 
 /**
  * @swagger
@@ -81,6 +86,6 @@ router.put("/profile", updateProfile);
  *       200:
  *         description: Password changed successfully
  */
-router.put("/change-password", changePassword);
+router.put("/change-password", passwordChangeRules, handleValidation, changePassword);
 
 module.exports = router;

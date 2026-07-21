@@ -1,24 +1,33 @@
 <div class="container page-section">
-  <div class="adm-page-head">
-    <h1 class="adm-page-title">Thông Báo</h1>
-    <p class="adm-page-desc"><%= notifs.length %> thông báo</p>
+  <div class="page-header">
+    <div>
+      <h1><i class="fas fa-bell"></i> Thông Báo</h1>
+      <p class="page-sub"><%= notifs.length %> thông báo</p>
+    </div>
+    <a href="/" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Trang chủ</a>
   </div>
+
   <% if (notifs.length > 0) { %>
-    <div class="notif-list">
+    <div class="user-notif-list">
       <% notifs.forEach(n => { %>
-        <div class="notif-item <%= n.read ? '' : 'unread' %>">
-          <div class="notif-icon">
-            <i class="fas fa-<%= n.type === 'system' ? 'cog' : n.type === 'personal' ? 'user' : 'bullhorn' %>"></i>
+        <div class="user-notif-item <%= n.read ? '' : 'unread' %>">
+          <div class="user-notif-icon">
+            <i class="fas fa-<%= n.type === 'personal' ? 'user' : 'bullhorn' %>"></i>
           </div>
-          <div class="notif-body">
+          <div class="user-notif-body">
             <strong><%= n.title %></strong>
             <p><%= n.message %></p>
-            <span class="adm-sub"><%= new Date(n.createdAt).toLocaleDateString('vi-VN') %></span>
+            <span class="page-sub"><%= new Date(n.createdAt).toLocaleString('vi-VN') %></span>
           </div>
         </div>
       <% }) %>
     </div>
   <% } else { %>
-    <p class="adm-empty">Không có thông báo nào</p>
+    <div class="empty-state">
+      <i class="fas fa-bell-slash"></i>
+      <h1>Không có thông báo</h1>
+      <p>Admin sẽ gửi thông báo hệ thống tại đây khi có cập nhật mới</p>
+      <a href="/" class="btn btn-primary">Về Trang Chủ</a>
+    </div>
   <% } %>
 </div>

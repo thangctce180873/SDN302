@@ -1,5 +1,7 @@
 // basic admin frontend: validation + handlers
 (function(){
+  if (window.__adminJsInit) return;
+  window.__adminJsInit = true;
   function jsonOrText(resp){ return resp.text().then(t=>{ try{ return JSON.parse(t); }catch{ return t; } }); }
   function showFormError(id,msg){ const el=document.getElementById(id); if(!el) return; el.textContent=msg; el.style.display='block'; }
   function hideError(id){ const el=document.getElementById(id); if(!el) return; el.textContent=''; el.style.display='none'; }
@@ -132,6 +134,10 @@
     if (notifForm) {
       notifForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (notifForm.dataset.processing === '1') return;
+        notifForm.dataset.processing = '1';
+        const submitBtn = notifForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
         const fd = new FormData(notifForm);
         const body = { title: fd.get('title'), message: fd.get('message'), type: fd.get('type'), userId: fd.get('userId') };
         try {
@@ -140,7 +146,11 @@
           if (!res.ok) throw new Error(j.message || 'Gửi thất bại');
           showSuccess(j.message || 'Đã gửi thông báo thành công!');
           setTimeout(() => location.reload(), 800);
-        } catch (err) { showError(err.message); }
+        } catch (err) {
+          showError(err.message);
+          notifForm.dataset.processing = '0';
+          if (submitBtn) submitBtn.disabled = false;
+        }
       });
     }
 

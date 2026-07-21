@@ -42,7 +42,7 @@ exports.searchMovies = async (request, response) => {
 exports.getCategories = async (_request, response) => {
   try {
     const data = await movieService.getCategories();
-    response.json({ success: true, data });
+    response.json({ success: true, data: movieService.extractItems(data) });
   } catch (error) {
     response.status(500).json({ success: false, message: error.message });
   }
@@ -63,7 +63,7 @@ exports.getCategoryMovies = async (request, response) => {
 exports.getCountries = async (_request, response) => {
   try {
     const data = await movieService.getCountries();
-    response.json({ success: true, data });
+    response.json({ success: true, data: movieService.extractItems(data) });
   } catch (error) {
     response.status(500).json({ success: false, message: error.message });
   }

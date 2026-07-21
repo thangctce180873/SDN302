@@ -45,6 +45,15 @@
             <i class="fas fa-heart" style="color:<%= isFavorite ? '#ef4444' : 'inherit' %>;"></i>
             <%= isFavorite ? 'Đã Thích' : 'Yêu Thích' %>
           </button>
+          <button type="button" class="btn btn-outline btn-lg" id="wlBtn"
+            data-slug="<%= movie.slug %>"
+            data-name="<%= (movie.name || '').replace(/"/g, '&quot;') %>"
+            data-thumb="<%= imgUrl(movie.thumb_url || movie.poster_url) %>"
+            data-year="<%= movie.year || '' %>"
+          >
+            <i class="fas fa-bookmark" style="color:<%= typeof isWatchlist !== 'undefined' && isWatchlist ? '#f59e0b' : 'inherit' %>;"></i>
+            <%= typeof isWatchlist !== 'undefined' && isWatchlist ? 'Đã Lưu' : 'Xem Sau' %>
+          </button>
           <button class="btn btn-outline btn-lg" onclick="openReportModal()" title="Báo lỗi phim">
             <i class="fas fa-flag"></i> Báo Lỗi
           </button>

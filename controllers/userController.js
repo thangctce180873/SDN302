@@ -7,12 +7,15 @@ exports.getProfile = async (request, response) => {
 exports.updateProfile = async (request, response) => {
   try {
     const { name, avatar } = request.body;
+    if (!name || name.trim().length < 2) {
+      return response.status(400).json({ success: false, message: "Tên không hợp lệ" });
+    }
     const user = await User.findByIdAndUpdate(
       request.user._id,
-      { name, avatar },
+      { name: name.trim(), ...(avatar !== undefined ? { avatar } : {}) },
       { new: true, runValidators: true },
-    );
-    response.json({ success: true, data: user });
+    ).select("-password");
+    response.json({ success: true, data: user, message: "Cập nhật thành công" });
   } catch (error) {
     response.status(500).json({ success: false, message: error.message });
   }

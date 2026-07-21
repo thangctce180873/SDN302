@@ -5,6 +5,16 @@ const REPORT_REASONS = [
   "wrong_subtitle", "wrong_info", "copyright", "other",
 ];
 
+const profileUpdateRules = [
+  body("name").trim().isLength({ min: 2, max: 50 }).withMessage("Tên phải từ 2–50 ký tự"),
+  body("avatar").optional({ values: "falsy" }).trim().isURL().withMessage("Avatar phải là URL hợp lệ"),
+];
+
+const passwordChangeRules = [
+  body("currentPassword").notEmpty().withMessage("Nhập mật khẩu hiện tại"),
+  body("newPassword").isLength({ min: 6 }).withMessage("Mật khẩu mới tối thiểu 6 ký tự"),
+];
+
 const favoriteCreateRules = [
   body("movieSlug").trim().notEmpty().withMessage("movieSlug bắt buộc"),
   body("movieName").trim().notEmpty().withMessage("movieName bắt buộc"),
@@ -80,6 +90,8 @@ function handleValidation(req, res, next) {
 }
 
 module.exports = {
+  profileUpdateRules,
+  passwordChangeRules,
   favoriteCreateRules,
   reportCreateRules,
   reportStatusRules,
