@@ -1,0 +1,14 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Cấu Hình API</h1>
+  <p class="adm-page-desc">Base URL hiện tại: <strong><%= apiUrl %></strong></p>
+</section>
+
+<section class="adm-card">
+  <form id="api-config-form" class="adm-form">
+    <div class="form-row">
+      <input id="apiUrl" name="apiUrl" value="<%= apiUrl %>" placeholder="https://api.example.com" required>
+      <button class="btn btn-primary" type="submit">Lưu</button>
+    </div>
+  </form>
+  <p class="muted">Lưu ý: cần restart server sau khi lưu để áp dụng thay đổi.</p>
+</section>

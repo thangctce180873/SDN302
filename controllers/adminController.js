@@ -1,457 +1,302 @@
-const User = require("../models/User");
-const Movie = require("../models/Movie");
-const Favorite = require("../models/Favorite");
-const Watchlist = require("../models/Watchlist");
-const WatchHistory = require("../models/WatchHistory");
-const Comment = require("../models/Comment");
-const Rating = require("../models/Rating");
-const Review = require("../models/Review");
-const Report = require("../models/Report");
-const Notification = require("../models/Notification");
-const ActivityLog = require("../models/ActivityLog");
 const movieService = require("../services/movieService");
+const User = require("../models/User");
+const Comment = require("../models/Comment");
+const Report = require("../models/Report");
+const Review = require("../models/Review");
+const Notification = require("../models/Notification");
+const WatchHistory = require("../models/WatchHistory");
+let Movie;
+try { Movie = require("../models/Movie"); } catch (e) { Movie = null; }
 
-// Dashboard
-
-exports.getStats = async (_request, response) => {
-  try {
-    const [userCount, commentCount, favoriteCount, movieCount, reportCount] =
-      await Promise.all([
-        User.countDocuments(),
-        Comment.countDocuments(),
-        Favorite.countDocuments(),
-        Movie.countDocuments(),
-        Report.countDocuments({ status: "pending" }),
-      ]);
-    response.json({
-      success: true,
-      data: { userCount, commentCount, favoriteCount, movieCount, reportCount },
-    });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// User Management
-
-exports.getAllUsers = async (_request, response) => {
-  try {
-    const users = await User.find().sort("-createdAt");
-    response.json({ success: true, data: users });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.updateUserRole = async (request, response) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      request.params.id,
-      { role: request.body.role },
-      { new: true, runValidators: true },
-    );
-    if (!user)
-      return response
-        .status(404)
-        .json({ success: false, message: "User không tồn tại" });
-    response.json({ success: true, data: user });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.deleteUser = async (request, response) => {
-  try {
-    const user = await User.findById(request.params.id);
-    if (!user)
-      return response
-        .status(404)
-        .json({ success: false, message: "User không tồn tại" });
-    if (user.role === "admin") {
-      return response
-        .status(400)
-        .json({ success: false, message: "Không thể xóa admin" });
+module.exports = {
+  getStats: async (req, res) => {
+    try {
+      const users = await User.countDocuments();
+      const comments = await Comment.countDocuments();
+      const reports = await Report.countDocuments();
+      const moviesLocal = Movie ? await Movie.countDocuments() : 0;
+      return res.json({ users, comments, reports, moviesLocal });
+    } catch (err) {
+      console.error("getStats error:", err);
+      return res.status(500).json({ message: err.message });
     }
-    await Promise.all([
-      user.deleteOne(),
-      Comment.deleteMany({ user: user._id }),
-      Favorite.deleteMany({ user: user._id }),
-      Rating.deleteMany({ user: user._id }),
-      WatchHistory.deleteMany({ user: user._id }),
-      Watchlist.deleteMany({ user: user._id }),
-      Review.deleteMany({ user: user._id }),
-      Report.deleteMany({ user: user._id }),
-    ]);
-    response.json({
-      success: true,
-      message: "Đã xóa user và toàn bộ dữ liệu liên quan",
-    });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  },
 
-// Comment Management
+  getAllUsers: async (req, res) => {
+    try {
+      const users = await User.find().sort("-createdAt");
+      return res.json({ users });
+    } catch (err) {
+      console.error("getAllUsers error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.deleteComment = async (request, response) => {
-  try {
-    const comment = await Comment.findById(request.params.id);
-    if (!comment)
-      return response
-        .status(404)
-        .json({ success: false, message: "Comment không tồn tại" });
-    await comment.deleteOne();
-    response.json({ success: true, message: "Đã xóa bình luận" });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  updateUserRole: async (req, res) => {
+    try {
+      const { role } = req.body;
+      if (!role || !["user","admin"].includes(role)) return res.status(400).json({ message: "Invalid role" });
+      const u = await User.findById(req.params.id);
+      if (!u) return res.status(404).json({ message: "User not found" });
+      u.role = role;
+      await u.save();
+      return res.json({ message: "Updated", user: u });
+    } catch (err) {
+      console.error("updateUserRole error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-// Report Management
+  deleteUser: async (req, res) => {
+    try {
+      await User.findByIdAndDelete(req.params.id);
+      return res.json({ message: "Deleted" });
+    } catch (err) {
+      console.error("deleteUser error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.updateReportStatus = async (request, response) => {
-  try {
-    const report = await Report.findByIdAndUpdate(
-      request.params.id,
-      { status: request.body.status, adminNote: request.body.adminNote || "" },
-      { new: true },
-    );
-    if (!report)
-      return response
-        .status(404)
-        .json({ success: false, message: "Report không tồn tại" });
-    response.json({ success: true, data: report });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  deleteComment: async (req, res) => {
+    try {
+      await Comment.findByIdAndDelete(req.params.id);
+      return res.json({ message: "Deleted" });
+    } catch (err) {
+      console.error("deleteComment error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.getAllReports = async (_request, response) => {
-  try {
-    const reports = await Report.find()
-      .populate("user", "name email")
-      .sort("-createdAt");
-    response.json({ success: true, data: reports });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  getAllWatchHistory: async (req, res) => {
+    try {
+      const history = await WatchHistory.find()
+        .populate("user", "name email")
+        .sort("-watchedAt")
+        .limit(200);
+      return res.json({ success: true, history });
+    } catch (err) {
+      console.error("getAllWatchHistory error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.deleteReport = async (request, response) => {
-  try {
-    await Report.findByIdAndDelete(request.params.id);
-    response.json({ success: true, message: "Đã xóa báo cáo" });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  getAllReports: async (req, res) => {
+    try {
+      const reports = await Report.find().populate("user", "name email").sort("-createdAt");
+      return res.json({ reports });
+    } catch (err) {
+      console.error("getAllReports error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-// Notification
+  updateReportStatus: async (req, res) => {
+    try {
+      const { status, adminNote } = req.body;
+      const r = await Report.findById(req.params.id);
+      if (!r) return res.status(404).json({ message: "Report not found" });
+      if (status) r.status = status;
+      if (adminNote !== undefined) r.adminNote = adminNote;
+      await r.save();
+      return res.json({ message: "Updated", report: r });
+    } catch (err) {
+      console.error("updateReportStatus error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.sendNotification = async (request, response) => {
-  try {
-    const { title, message, type, userId } = request.body;
-    const notification = await Notification.create({
-      title,
-      message,
-      type: type || "broadcast",
-      user: userId || null,
-    });
-    response.json({ success: true, data: notification });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  deleteReport: async (req, res) => {
+    try {
+      await Report.findByIdAndDelete(req.params.id);
+      return res.json({ message: "Deleted" });
+    } catch (err) {
+      console.error("deleteReport error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-// Review Management
+  deleteReview: async (req, res) => {
+    try {
+      await Review.findByIdAndDelete(req.params.id);
+      return res.json({ message: "Deleted" });
+    } catch (err) {
+      console.error("deleteReview error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.deleteReview = async (request, response) => {
-  try {
-    const review = await Review.findById(request.params.id);
-    if (!review)
-      return response
-        .status(404)
-        .json({ success: false, message: "Review không tồn tại" });
-    await review.deleteOne();
-    response.json({ success: true });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  sendNotification: async (req, res) => {
+    try {
+      const { title, message, type = "broadcast", userId } = req.body;
+      const n = new Notification({ title, message, type, user: type === "personal" ? userId : null });
+      await n.save();
+      return res.json({ message: "Sent", notif: n });
+    } catch (err) {
+      console.error("sendNotification error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-// API Connection Test
+  testApiConnection: async (req, res) => {
+    try {
+      const start = Date.now();
+      const data = await movieService.getNewMovies(1);
+      const latency = Date.now() - start;
+      const ok = !!(data && (data.items || data.data));
+      return res.json({ success: ok, latency, sample: data?.items?.length || data?.data?.items?.length || 0 });
+    } catch (err) {
+      console.error("testApiConnection error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.testApiConnection = async (_request, response) => {
-  try {
-    const start = Date.now();
-    const data = await movieService.getNewMovies(1);
-    const latency = Date.now() - start;
-    const ok = !!(data && (data.items || data.data));
-    response.json({
-      success: true,
-      data: {
-        status: ok ? "connected" : "error",
-        latency,
-        baseUrl: process.env.MOVIE_API_BASE_URL || "https://phimapi.com",
-        sampleCount: data.items?.length || data.data?.items?.length || 0,
-      },
-    });
-  } catch (error) {
-    response.json({
-      success: true,
-      data: {
-        status: "error",
-        latency: null,
-        baseUrl: process.env.MOVIE_API_BASE_URL,
-        error: error.message,
-      },
-    });
-  }
-};
+  browseAPIMovies: async (req, res) => {
+    try {
+      const { type, keyword, page = 1 } = req.query;
+      let data;
+      if (keyword) data = await movieService.searchMovies({ keyword, page, limit: 24 });
+      else if (type) data = await movieService.getMovieList(type, { page, limit: 24 });
+      else data = await movieService.getNewMovies(page);
+      return res.json({ data });
+    } catch (err) {
+      console.error("browseAPIMovies error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-// Movie CRUD
+  getAPIMovieDetail: async (req, res) => {
+    try {
+      const d = await movieService.getMovieDetail(req.params.slug);
+      return res.json({ data: d });
+    } catch (err) {
+      console.error("getAPIMovieDetail error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.browseAPIMovies = async (request, response) => {
-  try {
-    const { type, keyword, page = 1 } = request.query;
-    let movies = [],
-      pagination = {};
+  getAPICategories: async (req, res) => {
+    try {
+      const d = await movieService.getCategories();
+      return res.json({ data: movieService.extractItems(d) });
+    } catch (err) {
+      console.error("getAPICategories error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-    if (keyword) {
-      const data = await movieService.searchMovies({
-        keyword,
-        page,
-        limit: 24,
+  getAPICountries: async (req, res) => {
+    try {
+      const d = await movieService.getCountries();
+      return res.json({ data: movieService.extractItems(d) });
+    } catch (err) {
+      console.error("getAPICountries error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
+
+  getLocalMovies: async (req, res) => {
+    try {
+      if (!Movie) return res.status(501).json({ message: "Local Movie model missing" });
+      const page = parseInt(req.query.page || "1");
+      const limit = 20;
+      const total = await Movie.countDocuments();
+      const movies = await Movie.find().skip((page-1)*limit).limit(limit).sort("-updatedAt");
+      return res.json({ movies, pagination: { total, page, totalPages: Math.ceil(total/limit) } });
+    } catch (err) {
+      console.error("getLocalMovies error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
+
+  importMovie: async (req, res) => {
+    try {
+      const { slug } = req.body;
+      if (!slug) return res.status(400).json({ message: "Missing slug" });
+      const apiResp = await movieService.getMovieDetail(slug);
+      const mv = apiResp.movie || apiResp;
+      if (!mv || !mv.slug) return res.status(404).json({ message: "Movie not found on API" });
+      if (!Movie) return res.status(501).json({ message: "Local Movie model not available" });
+
+      const exists = await Movie.findOne({ slug: mv.slug });
+      if (exists) return res.json({ message: "Movie already imported", movie: exists });
+
+      const doc = new Movie({
+        name: mv.name || mv.title,
+        origin_name: mv.origin_name || "",
+        slug: mv.slug,
+        year: mv.year || mv.release_year,
+        content: mv.content || mv.description || "",
+        thumb_url: mv.thumb_url || mv.thumb || mv.poster || "",
+        poster_url: mv.poster_url || mv.poster || mv.thumb || "",
+        categories: (mv.category || mv.categories || []).map(c =>
+          typeof c === "string" ? { name: c, slug: c } : { name: c.name || c.slug, slug: c.slug || c.name }
+        ),
+        countries: (mv.country || mv.countries || []).map(c =>
+          typeof c === "string" ? { name: c, slug: c } : { name: c.name || c.slug, slug: c.slug || c.name }
+        ),
       });
-      movies = data.data?.items || [];
-      pagination = data.data?.params?.pagination || {};
-    } else if (type) {
-      const data = await movieService.getMovieList(type, { page, limit: 24 });
-      movies = data.data?.items || [];
-      pagination = data.data?.params?.pagination || {};
-    } else {
-      const data = await movieService.getNewMovies(page);
-      movies = data.items || [];
-      pagination = data.pagination || {};
+      await doc.save();
+      return res.json({ message: "Imported", movie: doc });
+    } catch (err) {
+      console.error("importMovie error:", err);
+      return res.status(500).json({ message: err.message });
     }
+  },
 
-    response.json({ success: true, data: { movies, pagination } });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getAPIMovieDetail = async (request, response) => {
-  try {
-    const data = await movieService.getMovieDetail(request.params.slug);
-    response.json({ success: true, data });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.importMovie = async (request, response) => {
-  try {
-    const { slug } = request.body;
-    if (!slug)
-      return response
-        .status(400)
-        .json({ success: false, message: "Thiếu slug phim" });
-
-    const existing = await Movie.findOne({ slug });
-    if (existing)
-      return response
-        .status(400)
-        .json({ success: false, message: "Phim đã tồn tại trong CSDL" });
-
-    const apiData = await movieService.getMovieDetail(slug);
-    const m = apiData.movie;
-    if (!m)
-      return response
-        .status(404)
-        .json({ success: false, message: "Không tìm thấy phim từ API" });
-
-    const movie = await Movie.create({
-      slug: m.slug,
-      name: m.name,
-      origin_name: m.origin_name || "",
-      thumb_url: m.thumb_url || "",
-      poster_url: m.poster_url || "",
-      year: m.year,
-      quality: m.quality || "",
-      lang: m.lang || "",
-      type: m.type || "",
-      status: m.status || "",
-      episode_current: m.episode_current || "",
-      episode_total: m.episode_total || "",
-      time: m.time || "",
-      content: m.content || "",
-      categories: m.category || [],
-      countries: m.country || [],
-    });
-
-    response.json({
-      success: true,
-      data: movie,
-      message: "Đã import phim thành công",
-    });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getLocalMovies = async (request, response) => {
-  try {
-    const { page = 1, keyword, limit = 20 } = request.query;
-    const query = {};
-    if (keyword) {
-      query.$or = [
-        { name: new RegExp(keyword, "i") },
-        { origin_name: new RegExp(keyword, "i") },
-        { slug: new RegExp(keyword, "i") },
-      ];
+  refreshMovie: async (req, res) => {
+    try {
+      if (!Movie) return res.status(501).json({ message: "Local Movie model not available" });
+      const slug = req.params.slug;
+      const apiResp = await movieService.getMovieDetail(slug);
+      const mv = apiResp.movie || apiResp;
+      if (!mv) return res.status(404).json({ message: "Not found on API" });
+      const doc = await Movie.findOneAndUpdate({ slug }, { raw: mv, name: mv.name || mv.title, thumb: mv.thumb || mv.poster }, { new: true });
+      return res.json({ message: "Refreshed", movie: doc });
+    } catch (err) {
+      console.error("refreshMovie error:", err);
+      return res.status(500).json({ message: err.message });
     }
-    const total = await Movie.countDocuments(query);
-    const movies = await Movie.find(query)
-      .sort("-updatedAt")
-      .skip((parseInt(page) - 1) * parseInt(limit))
-      .limit(parseInt(limit));
+  },
 
-    response.json({
-      success: true,
-      data: {
-        movies,
-        total,
-        page: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-      },
-    });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
+  toggleFeatured: async (req, res) => {
+    try {
+      if (!Movie) return res.status(501).json({ message: "Local Movie model not available" });
+      const id = req.params.id;
+      const mv = await Movie.findById(id);
+      if (!mv) return res.status(404).json({ message: "Movie not found" });
+      mv.featured = !mv.featured;
+      await mv.save();
+      return res.json({ message: "Toggled", featured: mv.featured });
+    } catch (err) {
+      console.error("toggleFeatured error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-exports.updateLocalMovie = async (request, response) => {
-  try {
-    const {
-      name,
-      origin_name,
-      year,
-      quality,
-      lang,
-      content,
-      featured,
-      isActive,
-      adminNote,
-    } = request.body;
-    const update = {};
-    if (name !== undefined) update.name = name;
-    if (origin_name !== undefined) update.origin_name = origin_name;
-    if (year !== undefined) update.year = year;
-    if (quality !== undefined) update.quality = quality;
-    if (lang !== undefined) update.lang = lang;
-    if (content !== undefined) update.content = content;
-    if (featured !== undefined) update.featured = featured;
-    if (isActive !== undefined) update.isActive = isActive;
-    if (adminNote !== undefined) update.adminNote = adminNote;
+  updateLocalMovie: async (req, res) => {
+    try {
+      if (!Movie) return res.status(501).json({ message: "Local Movie model not available" });
+      const id = req.params.id;
+      const updates = req.body || {};
+      const mv = await Movie.findById(id);
+      if (!mv) return res.status(404).json({ message: "Movie not found" });
+      Object.assign(mv, updates);
+      await mv.save();
+      return res.json({ message: "Updated", movie: mv });
+    } catch (err) {
+      console.error("updateLocalMovie error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 
-    const movie = await Movie.findByIdAndUpdate(request.params.id, update, {
-      new: true,
-    });
-    if (!movie)
-      return response
-        .status(404)
-        .json({ success: false, message: "Phim không tồn tại" });
-    response.json({ success: true, data: movie });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.deleteLocalMovie = async (request, response) => {
-  try {
-    const movie = await Movie.findByIdAndDelete(request.params.id);
-    if (!movie)
-      return response
-        .status(404)
-        .json({ success: false, message: "Phim không tồn tại" });
-    response.json({ success: true, message: "Đã xóa phim khỏi CSDL" });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.refreshMovie = async (request, response) => {
-  try {
-    const local = await Movie.findOne({ slug: request.params.slug });
-    if (!local)
-      return response
-        .status(404)
-        .json({ success: false, message: "Phim không tồn tại trong CSDL" });
-
-    const apiData = await movieService.getMovieDetail(request.params.slug);
-    const m = apiData.movie;
-    if (!m)
-      return response
-        .status(404)
-        .json({ success: false, message: "Không tìm thấy phim từ API" });
-
-    local.name = m.name;
-    local.origin_name = m.origin_name || "";
-    local.thumb_url = m.thumb_url || "";
-    local.poster_url = m.poster_url || "";
-    local.year = m.year;
-    local.quality = m.quality || "";
-    local.lang = m.lang || "";
-    local.type = m.type || "";
-    local.status = m.status || "";
-    local.episode_current = m.episode_current || "";
-    local.episode_total = m.episode_total || "";
-    local.time = m.time || "";
-    local.content = m.content || "";
-    local.categories = m.category || [];
-    local.countries = m.country || [];
-    await local.save();
-
-    response.json({
-      success: true,
-      data: local,
-      message: "Đã cập nhật dữ liệu từ API",
-    });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.toggleFeatured = async (request, response) => {
-  try {
-    const movie = await Movie.findById(request.params.id);
-    if (!movie)
-      return response
-        .status(404)
-        .json({ success: false, message: "Phim không tồn tại" });
-    movie.featured = !movie.featured;
-    await movie.save();
-    response.json({ success: true, data: movie });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getAPICategories = async (_request, response) => {
-  try {
-    const data = await movieService.getCategories();
-    response.json({ success: true, data });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getAPICountries = async (_request, response) => {
-  try {
-    const data = await movieService.getCountries();
-    response.json({ success: true, data });
-  } catch (error) {
-    response.status(500).json({ success: false, message: error.message });
-  }
+  deleteLocalMovie: async (req, res) => {
+    try {
+      if (!Movie) return res.status(501).json({ message: "Local Movie model not available" });
+      await Movie.findByIdAndDelete(req.params.id);
+      return res.json({ message: "Deleted" });
+    } catch (err) {
+      console.error("deleteLocalMovie error:", err);
+      return res.status(500).json({ message: err.message });
+    }
+  },
 };

@@ -11,6 +11,11 @@ const watchHistorySchema = new mongoose.Schema(
     serverIndex: { type: Number, default: 0 },
     progress: { type: Number, default: 0 },
     duration: { type: Number, default: 0 },
+    eventType: {
+      type: String,
+      enum: ["start", "pause", "leave", "interval", "update"],
+      default: "update",
+    },
     watchedAt: { type: Date, default: Date.now },
   },
   { timestamps: true },

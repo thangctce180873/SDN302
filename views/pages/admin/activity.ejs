@@ -1,0 +1,25 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Activity Log</h1>
+  <p class="adm-page-desc"><%= (logs || []).length %> mục</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>Người dùng</th><th>Hành động</th><th>Thời gian</th></tr></thead>
+      <tbody>
+        <% const list = logs || []; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="3">Không có dữ liệu</td></tr>
+        <% } %>
+        <% list.forEach(l => { %>
+          <tr>
+            <td><%= l.user?.name || "Hệ thống" %></td>
+            <td><%= l.action %></td>
+            <td><%= new Date(l.createdAt).toLocaleString("vi-VN") %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>

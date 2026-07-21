@@ -1,0 +1,26 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Quản Lý Reviews</h1>
+  <p class="adm-page-desc"><%= (reviews || []).length %> reviews</p>
+</section>
+
+<section class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>Người dùng</th><th>Phim</th><th>Nội dung</th><th>Ngày</th></tr></thead>
+      <tbody>
+        <% const list = reviews || []; %>
+        <% if (!list.length) { %>
+          <tr><td colspan="4">Không có review</td></tr>
+        <% } %>
+        <% list.forEach(r => { %>
+          <tr>
+            <td><%= r.user?.name || "Ẩn" %></td>
+            <td><%= r.movieSlug %></td>
+            <td><%= r.content %></td>
+            <td><%= new Date(r.createdAt).toLocaleString("vi-VN") %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -9,6 +9,8 @@ const connectDB = require("./config/database");
 const { setUser } = require("./middleware/auth");
 const User = require("./models/User");
 
+const swaggerUi = require('swagger-ui-express');
+
 const app = express();
 
 connectDB()
@@ -45,6 +47,7 @@ app.set("layout", "layouts/main");
 
 app.use(setUser);
 
+// routes that don't depend on swagger/admin/page variables
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/user"));
 app.use("/api/movies", require("./routes/movie"));
@@ -56,10 +59,20 @@ app.use("/api/ratings", require("./routes/rating"));
 app.use("/api/reviews", require("./routes/review"));
 app.use("/api/notifications", require("./routes/notification"));
 app.use("/api/reports", require("./routes/report"));
-app.use("/api/admin", require("./routes/admin"));
 
-app.use("/", require("./routes/page"));
+// Swagger spec (must be created before swaggerUi.setup)
+const swaggerSpec = require("./config/swagger");
 
+// require routers that will be mounted after swaggerSpec is ready
+const adminApi = require('./routes/admin');
+const pageRouter = require('./routes/page');
+
+// mount admin api, swagger, page router (no duplicates)
+app.use('/api/admin', adminApi);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/', pageRouter);
+
+// error handler
 app.use((error, request, response, _next) => {
   console.error(error.stack);
 

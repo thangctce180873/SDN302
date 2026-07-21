@@ -1,4 +1,6 @@
 const router = require("express").Router();
+const fs = require("fs");
+const path = require("path");
 const { protect, adminOnly } = require("../middleware/auth");
 const movieService = require("../services/movieService");
 const User = require("../models/User");
@@ -11,6 +13,13 @@ const Review = require("../models/Review");
 const Report = require("../models/Report");
 const Notification = require("../models/Notification");
 const ActivityLog = require("../models/ActivityLog");
+
+let Movie;
+try {
+  Movie = require("../models/Movie");
+} catch (error) {
+  Movie = null;
+}
 
 router.get("/", async (request, response) => {
   try {
@@ -90,16 +99,20 @@ router.get("/movie/:slug", async (request, response) => {
     const comments = await Comment.find({ movieSlug: request.params.slug })
       .populate("user", "name avatar")
       .sort("-createdAt");
-    response.render("pages/movie-detail", {
+    response.render("pages/detail", {
       title: movie.movie?.name || "Chi tiết phim",
       movie: movie.movie,
       episodes: movie.episodes || [],
       isFavorite,
       comments,
+      user: response.locals.user,
     });
   } catch (error) {
     console.error("Movie detail error:", error.message);
-    response.redirect("/");
+    response.status(404).render("pages/error", {
+      title: "Không tìm thấy phim",
+      message: "Phim không tồn tại hoặc API phim đang lỗi. Vui lòng thử lại sau.",
+    });
   }
 });
 
@@ -115,17 +128,12 @@ router.get("/watch/:slug", async (request, response) => {
     const currentEpisode = serverData[episodeIndex] || serverData[0] || null;
 
     let relatedMovies = [];
-
     try {
       const catSlug = movieDetailResponse.movie?.category?.[0]?.slug;
-
       if (catSlug) {
         const relatedMoviesResponse = await movieService.getCategoryMovies(
           catSlug,
-          {
-            page: 1,
-            limit: 13,
-          },
+          { page: 1, limit: 13 },
         );
         relatedMovies = (relatedMoviesResponse.data?.items || [])
           .filter((m) => m.slug !== request.params.slug)
@@ -134,13 +142,15 @@ router.get("/watch/:slug", async (request, response) => {
     } catch (error) {}
 
     response.render("pages/watch", {
-      title: `Xem ${movie.movie?.name || "Phim"}`,
-      movie: movie.movie,
+      title: `Xem ${movieDetailResponse.movie?.name || "Phim"}`,
+      movie: movieDetailResponse.movie,
       episodes,
       serverData,
       currentEpisode,
-      currentEpIndex: epIndex,
+      currentEpIndex: episodeIndex,
+      serverIndex,
       relatedMovies,
+      user: response.locals.user,
     });
   } catch (error) {
     console.error("Watch error:", error.message);
@@ -265,268 +275,294 @@ router.get("/watchhistory", protect, async (request, response) => {
 });
 
 router.get("/notifications", protect, async (request, response) => {
-  const notifications = await Notification.find({
+  const notifs = await Notification.find({
     $or: [{ user: request.user._id }, { type: "broadcast" }],
   })
     .sort("-createdAt")
     .limit(50);
+
   await Notification.updateMany(
     { $or: [{ user: request.user._id }, { type: "broadcast" }], read: false },
     { read: true },
   );
-  response.render("pages/notifications", { title: "Thông Báo", notifications });
+
+  response.render("pages/notifications", {
+    title: "Thông Báo",
+    notifs,
+  });
 });
 
 router.get("/admin", protect, adminOnly, async (request, response) => {
-  const [userCount, commentCount, favoriteCount, adminCount] =
-    await Promise.all([
-      User.countDocuments(),
-      Comment.countDocuments(),
-      Favorite.countDocuments(),
-      User.countDocuments({ role: "admin" }),
-    ]);
-  const recentUsers = await User.find().sort("-createdAt").limit(8);
-  const recentComments = await Comment.find()
-    .populate("user", "name")
-    .sort("-createdAt")
-    .limit(6);
-  const topFavorites = await Favorite.aggregate([
-    {
-      $group: {
-        _id: "$movieSlug",
-        movieName: { $first: "$movieName" },
-        movieThumb: { $first: "$movieThumb" },
-        count: { $sum: 1 },
-      },
-    },
-    { $sort: { count: -1 } },
-    { $limit: 5 },
-  ]);
-  response.render("pages/admin/dashboard", {
-    layout: "layouts/admin",
-    title: "Admin Dashboard",
-    stats: { userCount, commentCount, favoriteCount, adminCount },
-    recentUsers,
-    recentComments,
-    topFavorites,
-    adminPage: "dashboard",
-  });
-});
-
-router.get("/admin/movies", protect, adminOnly, async (request, response) => {
-  const Movie = require("../models/Movie");
-  const { tab = "browse", type = "", keyword = "", page = 1 } = request.query;
-
-  let movies = [],
-    pagination = {},
-    localCount = 0;
-
   try {
-    localCount = await Movie.countDocuments();
-
-    if (tab === "local") {
-      const query = keyword
-        ? {
-            $or: [
-              { name: new RegExp(keyword, "i") },
-              { origin_name: new RegExp(keyword, "i") },
-              { slug: new RegExp(keyword, "i") },
-            ],
-          }
-        : {};
-      const limit = 20;
-      const total = await Movie.countDocuments(query);
-      movies = await Movie.find(query)
-        .sort("-updatedAt")
-        .skip((parseInt(page) - 1) * limit)
-        .limit(limit);
-      pagination = {
-        totalItems: total,
-        totalPages: Math.ceil(total / limit),
-        currentPage: parseInt(page),
-        totalItemsPerPage: limit,
-      };
-    } else {
-      if (keyword) {
-        const data = await movieService.searchMovies({
-          keyword,
-          page,
-          limit: 24,
-        });
-        movies = data.data?.items || [];
-        pagination = data.data?.params?.pagination || {};
-      } else if (type) {
-        const data = await movieService.getMovieList(type, { page, limit: 24 });
-        movies = data.data?.items || [];
-        pagination = data.data?.params?.pagination || {};
-      } else {
-        const data = await movieService.getNewMovies(page);
-        movies = data.items || [];
-        pagination = data.pagination || {};
-      }
-    }
-  } catch (error) {
-    console.error("Admin movies error:", error.message);
+    response.render("pages/admin/dashboard", {
+      layout: "layouts/admin",
+      title: "Admin Dashboard",
+      user: request.user || null,
+      adminPage: "dashboard",
+    });
+  } catch (err) {
+    console.error("Admin page render error:", err);
+    response.status(500).render("pages/error", { message: "Đã xảy ra lỗi server" });
   }
+});
 
-  let categories = [],
-    countries = [];
-
+router.get("/admin/:page?", protect, adminOnly, async (req, res) => {
   try {
-    const [cats, ctrs] = await Promise.all([
-      movieService.getCategories(),
-      movieService.getCountries(),
-    ]);
-    categories = cats || [];
-    countries = ctrs || [];
-  } catch (error) {}
+    const page = req.params.page || "dashboard";
+    const safePage = page.replace(/[^a-zA-Z0-9_-]/g, "");
+    const viewFile = path.join(
+      __dirname,
+      "..",
+      "views",
+      "pages",
+      "admin",
+      `${safePage}.ejs`,
+    );
 
-  response.render("pages/admin/movies", {
-    layout: "layouts/admin",
-    title: "Quản Lý Phim",
-    adminPage: "movies",
-    tab,
-    type,
-    keyword,
-    movies,
-    pagination,
-    currentPage: parseInt(page),
-    localCount,
-    categories,
-    countries,
-  });
-});
+    if (!fs.existsSync(viewFile)) {
+      return res.status(404).render("pages/error", {
+        title: "Không tìm thấy trang",
+        message: "Trang quản trị không tồn tại",
+      });
+    }
 
-router.get("/admin/users", protect, adminOnly, async (request, response) => {
-  const users = await User.find().sort("-createdAt");
-  const userStats = await Promise.all(
-    users.map(async (u) => {
-      const [comments, favorites] = await Promise.all([
-        Comment.countDocuments({ user: u._id }),
-        Favorite.countDocuments({ user: u._id }),
-      ]);
-      return {
-        ...u.toObject(),
-        commentCount: comments,
-        favoriteCount: favorites,
-      };
-    }),
-  );
-  response.render("pages/admin/users", {
-    layout: "layouts/admin",
-    title: "Quản Lý Users",
-    users: userStats,
-    adminPage: "users",
-  });
-});
-
-router.get("/admin/comments", protect, adminOnly, async (request, response) => {
-  const comments = await Comment.find()
-    .populate("user", "name email")
-    .sort("-createdAt");
-  response.render("pages/admin/comments", {
-    layout: "layouts/admin",
-    title: "Quản Lý Bình Luận",
-    comments,
-    adminPage: "comments",
-  });
-});
-
-router.get(
-  "/admin/favorites",
-  protect,
-  adminOnly,
-  async (request, response) => {
-    const topMovies = await Favorite.aggregate([
-      {
-        $group: {
-          _id: "$movieSlug",
-          movieName: { $first: "$movieName" },
-          movieThumb: { $first: "$movieThumb" },
-          movieYear: { $first: "$movieYear" },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { count: -1 } },
-    ]);
-    const recentFavorites = await Favorite.find()
-      .populate("user", "name")
-      .sort("-createdAt")
-      .limit(20);
-    response.render("pages/admin/favorites", {
+    const context = {
       layout: "layouts/admin",
-      title: "Thống Kê Yêu Thích",
-      topMovies,
-      recentFavorites,
-      adminPage: "favorites",
+      title: safePage === "dashboard" ? "Dashboard" : safePage,
+      user: req.user || null,
+      adminPage: safePage,
+    };
+
+    switch (safePage) {
+      case "dashboard":
+        break;
+
+      case "movies": {
+        try {
+          const pageNo = parseInt(req.query.page || "1");
+          const limit = 20;
+          const tab = req.query.tab || "browse";
+          const keyword = (req.query.keyword || "").trim();
+
+          context.tab = tab;
+          context.keyword = keyword;
+          context.type = req.query.type || "";
+
+          const total = Movie ? await Movie.countDocuments() : 0;
+          context.localCount = total;
+
+          if (tab === "browse") {
+            let apiData;
+            const typeSlug = (req.query.type || "").trim();
+            if (keyword) {
+              apiData = await movieService.searchMovies({
+                keyword,
+                page: pageNo,
+                limit,
+              });
+              context.movies = apiData.data?.items || [];
+              context.pagination = {
+                totalItems: apiData.data?.params?.pagination?.totalItems || context.movies.length,
+                currentPage: pageNo,
+                totalPages: apiData.data?.params?.pagination?.totalPages || 1,
+              };
+            } else if (typeSlug) {
+              apiData = await movieService.getCategoryMovies(typeSlug, { page: pageNo, limit });
+              context.movies = apiData.data?.items || [];
+              context.pagination = {
+                totalItems: apiData.data?.params?.pagination?.totalItems || context.movies.length,
+                currentPage: pageNo,
+                totalPages: apiData.data?.params?.pagination?.totalPages || 1,
+              };
+            } else {
+              apiData = await movieService.getNewMovies(pageNo);
+              context.movies = apiData.items || apiData.data?.items || [];
+              context.pagination = {
+                totalItems: apiData.pagination?.totalItems || context.movies.length,
+                currentPage: pageNo,
+                totalPages: apiData.pagination?.totalPages || 1,
+              };
+            }
+          } else {
+            const movies = Movie
+              ? await Movie.find()
+                  .sort("-updatedAt")
+                  .skip((pageNo - 1) * limit)
+                  .limit(limit)
+              : [];
+            context.movies = movies || [];
+            context.pagination = {
+              totalItems: total,
+              currentPage: pageNo,
+              totalPages: Math.ceil(total / limit) || 1,
+            };
+          }
+
+          try {
+            const [cats, ctrs] = await Promise.all([
+              movieService.getCategories(),
+              movieService.getCountries(),
+            ]);
+            context.categories = movieService.extractItems(cats);
+            context.countries = movieService.extractItems(ctrs);
+          } catch (err) {
+            context.categories = [];
+            context.countries = [];
+          }
+        } catch (error) {
+          console.error("Admin movies error:", error.message);
+          context.movies = [];
+          context.pagination = { currentPage: 1, totalPages: 1 };
+          context.localCount = 0;
+          context.tab = req.query.tab || "browse";
+          context.keyword = req.query.keyword || "";
+        }
+        break;
+      }
+
+      case "users": {
+        try {
+          const users = await User.find().sort("-createdAt");
+          context.users = users || [];
+        } catch (error) {
+          context.users = [];
+        }
+        break;
+      }
+
+      case "comments": {
+        try {
+          const comments = await Comment.find()
+            .populate("user", "name email")
+            .sort("-createdAt");
+          context.comments = comments || [];
+        } catch (error) {
+          context.comments = [];
+        }
+        break;
+      }
+
+      case "reviews": {
+        try {
+          const reviews = await Review.find()
+            .populate("user", "name email")
+            .sort("-createdAt");
+          context.reviews = reviews || [];
+        } catch (error) {
+          context.reviews = [];
+        }
+        break;
+      }
+
+      case "favorites": {
+        try {
+          const totalFavorites = await Favorite.countDocuments();
+          const topMovies = await Favorite.aggregate([
+            {
+              $group: {
+                _id: "$movieSlug",
+                movieName: { $first: "$movieName" },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+            { $limit: 50 },
+          ]);
+          const recentFavorites = await Favorite.find()
+            .populate("user", "name email")
+            .sort("-createdAt")
+            .limit(20);
+          context.topMovies = topMovies || [];
+          context.recentFavorites = recentFavorites || [];
+          context.totalFavorites = totalFavorites;
+        } catch (error) {
+          context.topMovies = [];
+          context.recentFavorites = [];
+          context.totalFavorites = 0;
+        }
+        break;
+      }
+
+      case "categories": {
+        try {
+          const [cats, ctrs] = await Promise.all([
+            movieService.getCategories(),
+            movieService.getCountries(),
+          ]);
+          context.categories = movieService.extractItems(cats);
+          context.countries = movieService.extractItems(ctrs);
+        } catch (error) {
+          context.categories = [];
+          context.countries = [];
+        }
+        break;
+      }
+
+      case "history": {
+        try {
+          const histories = await WatchHistory.find()
+            .populate("user", "name email")
+            .sort("-watchedAt")
+            .limit(200);
+          context.histories = histories || [];
+        } catch (error) {
+          context.histories = [];
+        }
+        break;
+      }
+
+      case "reports": {
+        try {
+          const reports = await Report.find()
+            .populate("user", "name email")
+            .sort("-createdAt");
+          context.reports = reports || [];
+        } catch (error) {
+          context.reports = [];
+        }
+        break;
+      }
+
+      case "notifications": {
+        try {
+          const notifs = await Notification.find().sort("-createdAt").limit(50);
+          context.notifs = notifs || [];
+        } catch (error) {
+          context.notifs = [];
+        }
+        break;
+      }
+
+      case "activity": {
+        try {
+          const logs = await ActivityLog.find()
+            .populate("user", "name")
+            .sort("-createdAt")
+            .limit(100);
+          context.logs = logs || [];
+        } catch (error) {
+          context.logs = [];
+        }
+        break;
+      }
+
+      case "api-config": {
+        context.apiUrl = process.env.MOVIE_API_BASE_URL || "https://phimapi.com";
+        break;
+      }
+
+      default:
+        break;
+    }
+
+    return res.render(`pages/admin/${safePage}`, context);
+  } catch (error) {
+    console.error("Admin page render error:", error);
+    return res.status(500).render("pages/error", {
+      title: "Lỗi",
+      message: "Đã xảy ra lỗi server",
     });
-  },
-);
-
-router.get(
-  "/admin/api-config",
-  protect,
-  adminOnly,
-  async (request, response) => {
-    response.render("pages/admin/api-config", {
-      layout: "layouts/admin",
-      title: "Cấu Hình API",
-      apiUrl: process.env.MOVIE_API_BASE_URL || "https://phimapi.com",
-      adminPage: "api-config",
-    });
-  },
-);
-
-router.get("/admin/reports", protect, adminOnly, async (request, response) => {
-  const reports = await Report.find()
-    .populate("user", "name email")
-    .sort("-createdAt");
-  response.render("pages/admin/reports", {
-    layout: "layouts/admin",
-    title: "Báo Cáo",
-    reports,
-    adminPage: "reports",
-  });
-});
-
-router.get("/admin/reviews", protect, adminOnly, async (request, response) => {
-  const reviews = await Review.find()
-    .populate("user", "name email")
-    .sort("-createdAt");
-  response.render("pages/admin/reviews", {
-    layout: "layouts/admin",
-    title: "Quản Lý Reviews",
-    reviews,
-    adminPage: "reviews",
-  });
-});
-
-router.get(
-  "/admin/notifications",
-  protect,
-  adminOnly,
-  async (request, response) => {
-    const notifs = await Notification.find().sort("-createdAt").limit(50);
-    response.render("pages/admin/notifications", {
-      layout: "layouts/admin",
-      title: "Thông Báo",
-      notifs,
-      adminPage: "notifications",
-    });
-  },
-);
-
-router.get("/admin/activity", protect, adminOnly, async (request, response) => {
-  const logs = await ActivityLog.find()
-    .populate("user", "name")
-    .sort("-createdAt")
-    .limit(100);
-  response.render("pages/admin/activity", {
-    layout: "layouts/admin",
-    title: "Activity Log",
-    logs,
-    adminPage: "activity",
-  });
+  }
 });
 
 module.exports = router;

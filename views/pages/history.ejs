@@ -27,9 +27,15 @@
 </div>
 <script>
 async function clearHistory() {
-  if (!confirm('Xóa toàn bộ lịch sử xem?')) return;
+  const ok = await showConfirm('Xóa toàn bộ lịch sử xem?', { title: 'Xóa lịch sử', confirmText: 'Xóa' });
+  if (!ok) return;
   const response = await fetch('/api/history', { method: 'DELETE' });
   const data = await response.json();
-  if (data.success) location.reload();
+  if (data.success) {
+    showSuccess('Đã xóa toàn bộ lịch sử xem');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    showError(data.message || 'Không thể xóa lịch sử');
+  }
 }
 </script>

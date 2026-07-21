@@ -1,0 +1,47 @@
+<section class="adm-page-head">
+  <h1 class="adm-page-title">Dashboard</h1>
+  <p class="adm-page-desc">Xin chào, <%= (user && user.name) ? user.name : "Admin" %> — Tổng quan hệ thống NightSweet</p>
+</section>
+
+<section class="adm-stats">
+  <div class="adm-stat">
+    <div class="adm-stat-icon"><i class="fas fa-film"></i></div>
+    <div>
+      <span class="adm-stat-num" id="stat-movies">--</span>
+      <span class="adm-stat-label">Phim local (DB)</span>
+    </div>
+  </div>
+  <div class="adm-stat">
+    <div class="adm-stat-icon green"><i class="fas fa-users"></i></div>
+    <div>
+      <span class="adm-stat-num" id="stat-users">--</span>
+      <span class="adm-stat-label">Người dùng</span>
+    </div>
+  </div>
+  <div class="adm-stat">
+    <div class="adm-stat-icon gold"><i class="fas fa-comments"></i></div>
+    <div>
+      <span class="adm-stat-num" id="stat-comments">--</span>
+      <span class="adm-stat-label">Bình luận</span>
+    </div>
+  </div>
+  <div class="adm-stat">
+    <div class="adm-stat-icon red"><i class="fas fa-flag"></i></div>
+    <div>
+      <span class="adm-stat-num" id="stat-reports">--</span>
+      <span class="adm-stat-label">Báo lỗi phim</span>
+    </div>
+  </div>
+</section>
+
+<script>
+fetch('/api/admin/stats')
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('stat-movies').textContent = d.moviesLocal ?? '--';
+    document.getElementById('stat-users').textContent = d.users ?? '--';
+    document.getElementById('stat-comments').textContent = d.comments ?? '--';
+    document.getElementById('stat-reports').textContent = d.reports ?? '--';
+  })
+  .catch(() => {});
+</script>

@@ -1,4 +1,4 @@
-<% const imgUrl = (url) => { if (!url) return '/image/placeholder.svg'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
+<% const imgUrl = (url) => { if (!url) return '/image/logo.png'; return url.startsWith('http') ? url : 'https://phimimg.com/' + url; }; %>
 <% const jsStr = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"'); %>
 
 <div class="wp">
@@ -119,7 +119,7 @@ function openWatchReport() { document.getElementById('watchReportModal').style.d
 async function submitWatchReport(e) {
   e.preventDefault();
   var reason = document.getElementById('watchReportReason').value;
-  if (!reason) return alert('Vui lòng chọn loại lỗi');
+  if (!reason) return showWarning('Vui lòng chọn loại lỗi');
   try {
     var res = await fetch('/api/reports', {
       method: 'POST',
@@ -135,26 +135,57 @@ async function submitWatchReport(e) {
     });
     var json = await res.json();
     if (json.success) {
-      alert('Đã gửi báo lỗi thành công!');
+      showSuccess('Đã gửi báo lỗi thành công!');
       document.getElementById('watchReportModal').style.display = 'none';
-    } else { alert(json.message || 'Có lỗi xảy ra'); }
-  } catch (err) { alert('Lỗi: ' + err.message); }
+    } else { showError(json.message || 'Có lỗi xảy ra'); }
+  } catch (err) { showError(err.message || 'Không thể gửi báo lỗi'); }
 }
 document.getElementById('watchReportModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
 
 (function() {
-  fetch('/api/history', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      movieSlug: '<%= movie.slug %>',
-      movieName: '<%= jsStr(movie.name) %>',
-      movieThumb: '<%= imgUrl(movie.thumb_url || movie.poster_url) %>',
-      episodeName: '<%= currentEpisode ? jsStr(currentEpisode.name) : '' %>',
-      episodeIndex: <%= currentEpIndex || 0 %>,
-      serverIndex: 0
-    })
-  }).catch(function(){});
+  var payload = {
+    movieSlug: '<%= movie.slug %>',
+    movieName: '<%= jsStr(movie.name) %>',
+    movieThumb: '<%= imgUrl(movie.thumb_url || movie.poster_url) %>',
+    episodeName: '<%= currentEpisode ? jsStr(currentEpisode.name) : "" %>',
+    episodeIndex: <%= currentEpIndex || 0 %>,
+    serverIndex: <%= typeof serverIndex !== "undefined" ? serverIndex : 0 %>,
+    progress: 0,
+    duration: 0
+  };
+
+  function saveWatchHistory(eventType) {
+    fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ eventType: eventType || 'update' }, payload))
+    }).catch(function(){});
+  }
+
+  saveWatchHistory('start');
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') saveWatchHistory('pause');
+  });
+
+  window.addEventListener('blur', function() {
+    saveWatchHistory('pause');
+  });
+
+  window.addEventListener('beforeunload', function() {
+    saveWatchHistory('leave');
+  });
+
+  window.addEventListener('pagehide', function() {
+    fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify(Object.assign({ eventType: 'leave' }, payload))
+    }).catch(function(){});
+  });
+
+  setInterval(function() { saveWatchHistory('interval'); }, 30000);
 })();
 </script>
 <% } %>

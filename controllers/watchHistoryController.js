@@ -11,6 +11,7 @@ exports.addHistory = async (request, response) => {
       serverIndex,
       progress,
       duration,
+      eventType,
     } = request.body;
     await WatchHistory.findOneAndUpdate(
       { user: request.user._id, movieSlug, episodeName: episodeName || "" },
@@ -22,6 +23,7 @@ exports.addHistory = async (request, response) => {
         serverIndex: serverIndex || 0,
         progress: progress || 0,
         duration: duration || 0,
+        eventType: eventType || "update",
         watchedAt: new Date(),
       },
       { upsert: true, new: true },
